@@ -9,7 +9,7 @@ import ChromeController
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 
-import util.WebRequest as WebRequest
+import WebRequest
 
 
 class MockServerRequestHandler(BaseHTTPRequestHandler):
