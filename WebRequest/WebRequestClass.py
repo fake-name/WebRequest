@@ -34,11 +34,13 @@ except ImportError:
 from . import HeaderParseMonkeyPatch
 
 from . import ChromiumMixin
-from . import PhantomJSMixin
 from . import Handlers
 from . import iri2uri
 from . import Constants
 from . import Exceptions
+from . import utility
+
+from .SeleniumModules import SeleniumPhantomJSMixin
 
 #pylint: disable-msg=E1101, C0325, R0201, W0702, W0703
 
@@ -46,68 +48,17 @@ COOKIEWRITELOCK = Lock()
 
 GLOBAL_COOKIE_FILE = None
 
-def as_soup(str):
-	return bs4.BeautifulSoup(str, "lxml")
-
-
-def determine_json_encoding(json_bytes):
-	'''
-	Given the fact that the first 2 characters in json are guaranteed to be ASCII, we can use
-	these to determine the encoding.
-	See: http://tools.ietf.org/html/rfc4627#section-3
-
-	Copied here:
-	   Since the first two characters of a JSON text will always be ASCII
-	   characters [RFC0020], it is possible to determine whether an octet
-	   stream is UTF-8, UTF-16 (BE or LE), or UTF-32 (BE or LE) by looking
-	   at the pattern of nulls in the first four octets.
-
-			   00 00 00 xx  UTF-32BE
-			   00 xx 00 xx  UTF-16BE
-			   xx 00 00 00  UTF-32LE
-			   xx 00 xx 00  UTF-16LE
-			   xx xx xx xx  UTF-8
-	'''
-
-	assert(isinstance(json_bytes, bytes))
-
-	if len(json_bytes) > 4:
-		b1, b2, b3, b4 = json_bytes[0], json_bytes[1], json_bytes[2], json_bytes[3]
-		if   b1 == 0 and b2 == 0 and b3 == 0 and b4 != 0:
-			return "UTF-32BE"
-		elif b1 == 0 and b2 != 0 and b3 == 0 and b4 != 0:
-			return "UTF-16BE"
-		elif b1 != 0 and b2 == 0 and b3 == 0 and b4 == 0:
-			return "UTF-32LE"
-		elif b1 != 0 and b2 == 0 and b3 != 0 and b4 == 0:
-			return "UTF-16LE"
-		elif b1 != 0 and b2 != 0 and b3 != 0 and b4 != 0:
-			return "UTF-8"
-		else:
-			raise Exceptions.ContentTypeError("Unknown encoding!")
-
-	elif len(json_bytes) > 2:
-		b1, b2 = json_bytes[0], json_bytes[1]
-		if   b1 == 0 and b2 == 0:
-			return "UTF-32BE"
-		elif b1 == 0 and b2 != 0:
-			return "UTF-16BE"
-		elif b1 != 0 and b2 == 0:
-			raise Exceptions.ContentTypeError("Json string too short to definitively infer encoding.")
-		elif b1 != 0 and b2 != 0:
-			return "UTF-8"
-		else:
-			raise Exceptions.ContentTypeError("Unknown encoding!")
-
-	raise Exceptions.ContentTypeError("Input string too short to guess encoding!")
-
 
 # A urllib2 wrapper that provides error handling and logging, as well as cookie management. It's a bit crude, but it works.
 # Also supports transport compresion.
 # OOOOLLLLLLDDDDD, has lots of creaky internals. Needs some cleanup desperately, but lots of crap depends on almost everything.
 # Arrrgh.
 
-class WebGetRobust(PhantomJSMixin.WebGetPjsMixin, ChromiumMixin.WebGetCrMixin):
+class WebGetRobust(
+		ChromiumMixin.WebGetCrMixin,
+		SeleniumPhantomJSMixin.WebGetSeleniumPjsMixin,
+
+		):
 
 	COOKIEFILE = 'cookies.lwp'				# the path and filename to save your cookies in
 	cj = None
@@ -199,7 +150,7 @@ class WebGetRobust(PhantomJSMixin.WebGetPjsMixin, ChromiumMixin.WebGetCrMixin):
 		if isinstance(page, bytes):
 			raise Exceptions.ContentTypeError("Received content not decoded! Cannot parse!")
 
-		soup = as_soup(page)
+		soup = utility.as_soup(page)
 		return soup
 
 	def getJson(self, *args, **kwargs):
@@ -211,7 +162,7 @@ class WebGetRobust(PhantomJSMixin.WebGetPjsMixin, ChromiumMixin.WebGetCrMixin):
 			try:
 				page = self.getpage(*args, **kwargs)
 				if isinstance(page, bytes):
-					page = page.decode(determine_json_encoding(page))
+					page = page.decode(utility.determine_json_encoding(page))
 					# raise ValueError("Received content not decoded! Cannot parse!")
 
 				page = page.strip()

@@ -16,10 +16,10 @@
 
 set -e
 
-nosetests                       \
-	--with-coverage                              \
-	--exe                                        \
-	--cover-package=util.WebRequest             \
+nosetests                      \
+	--with-coverage            \
+	--exe                      \
+	--cover-package=WebRequest \
 	--stop
 	# --nocapture
 

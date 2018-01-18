@@ -12,51 +12,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
+from . import SeleniumCommon
 
-
-
-class title_not_contains(object):
-	""" An expectation for checking that the title *does not* contain a case-sensitive
-	substring. title is the fragment of title expected
-	returns True when the title matches, False otherwise
-	"""
-	def __init__(self, title):
-		self.title = title
-
-
-	def __call__(self, driver):
-		return self.title not in driver.title
-
-#pylint: disable-msg=E1101, C0325, R0201, W0702, W0703
-
-def wait_for(condition_function):
-	start_time = time.time()
-	while time.time() < start_time + 3:
-		if condition_function():
-			return True
-		else:
-			time.sleep(0.1)
-	raise Exception(
-		'Timeout waiting for {}'.format(condition_function.__name__)
-	)
-
-class load_delay_context_manager(object):
-
-	def __init__(self, browser):
-		self.browser = browser
-
-	def __enter__(self):
-		self.old_page = self.browser.find_element_by_tag_name('html')
-
-	def page_has_loaded(self):
-		new_page = self.browser.find_element_by_tag_name('html')
-		return new_page.id != self.old_page.id
-
-	def __exit__(self, *_):
-		wait_for(self.page_has_loaded)
-
-
-class WebGetPjsMixin(object):
+class WebGetSeleniumPjsMixin(object):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
@@ -77,7 +35,7 @@ class WebGetPjsMixin(object):
 		self.pjs_driver.set_window_size(1280, 1024)
 
 
-	def _syncIntoPjsWebDriver(self):
+	def _syncIntoSeleniumPjsWebDriver(self):
 		'''
 		So selenium is completely retarded, and you can't just set cookes, you have to
 		be navigated to the domain for which you want to set cookies.
@@ -120,9 +78,9 @@ class WebGetPjsMixin(object):
 
 		if not self.pjs_driver:
 			self._initPjsWebDriver()
-		self._syncIntoPjsWebDriver()
+		self._syncIntoSeleniumPjsWebDriver()
 
-		with load_delay_context_manager(self.pjs_driver):
+		with SeleniumCommon.load_delay_context_manager(self.pjs_driver):
 			self.pjs_driver.get(itemUrl)
 		time.sleep(3)
 
@@ -157,7 +115,7 @@ class WebGetPjsMixin(object):
 
 		if not self.pjs_driver:
 			self._initPjsWebDriver()
-		self._syncIntoPjsWebDriver()
+		self._syncIntoSeleniumPjsWebDriver()
 
 		def try_get(loc_url):
 			tries = 3
@@ -246,7 +204,7 @@ class WebGetPjsMixin(object):
 
 		if not self.pjs_driver:
 			self._initPjsWebDriver()
-		self._syncIntoPjsWebDriver()
+		self._syncIntoSeleniumPjsWebDriver()
 
 
 		self.pjs_driver.get(url)
@@ -254,7 +212,7 @@ class WebGetPjsMixin(object):
 		if titleContains:
 			condition = EC.title_contains(titleContains)
 		elif titleNotContains:
-			condition = title_not_contains(titleNotContains)
+			condition = SeleniumCommon.title_not_contains(titleNotContains)
 		else:
 			raise ValueError("Wat?")
 

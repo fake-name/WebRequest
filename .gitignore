@@ -2,3 +2,7 @@ __pycache__
 /WebRequest.egg-info
 /test
 /dist
+/build
+/cookies.lwp
+/cookietemp.lwp
+/ghostdriver.log

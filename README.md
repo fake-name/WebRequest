@@ -31,7 +31,7 @@ A: Ok, Because I want to download the internet, and idiots post stuff, and then
 ## Note: If your non-interactive requires me to execute javascript to view it, FUCK YOU, you are a horrible person who is actively ruining the internet.
 
 License:
-BSD
+WTFPL
 
 
 

@@ -1,6 +1,7 @@
 
-from .WebRequestClass import as_soup
 from .WebRequestClass import WebGetRobust
+
+from .utility import as_soup
 
 from .Exceptions import WebGetException
 from .Exceptions import ContentTypeError
