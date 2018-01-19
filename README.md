@@ -28,7 +28,7 @@ Q: No, really, *why*
 A: Ok, Because I want to download the internet, and idiots post stuff, and then
     try to "protect" it from scraping with stupid jerberscript bullshit.
 
-## Note: If your non-interactive requires me to execute javascript to view it, FUCK YOU, you are a horrible person who is actively ruining the internet.
+## Note: If your non-interactive webite requires me to execute javascript to view it, FUCK YOU, you are a horrible person who is actively ruining the internet.
 
 License:
 WTFPL
