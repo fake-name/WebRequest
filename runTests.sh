@@ -20,8 +20,10 @@ nosetests                      \
 	--with-coverage            \
 	--exe                      \
 	--cover-package=WebRequest \
-	--stop
+	--stop                     \
+
 	# --nocapture
+	# tests.test_selenium.TestSeleniumChromium \
 
 coverage report --show-missing
 

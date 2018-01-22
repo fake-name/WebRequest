@@ -10,32 +10,41 @@ import selenium.webdriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 from . import SeleniumCommon
 
-class WebGetSeleniumPjsMixin(object):
+class WebGetSeleniumChromiumMixin(object):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
-		self.selenium_pjs_driver = None
+		self.selenium_chromium_driver = None
 
-	def _initPjsWebDriver(self):
-		if self.selenium_pjs_driver:
-			self.selenium_pjs_driver.quit()
-		dcap = dict(DesiredCapabilities.PHANTOMJS)
+	def _initSeleniumChromiumWebDriver(self):
+		if self.selenium_chromium_driver:
+			self.selenium_chromium_driver.quit()
+
 		wgSettings = dict(self.browserHeaders)
+
+		chrome_options = Options()
+		chrome_options.add_argument("--headless")
+		chrome_options.add_argument("--user-agent={}".format(wgSettings['User-Agent']))
+		dcap = dict(DesiredCapabilities.CHROME)
 		# Install the headers from the WebGet class into phantomjs
-		dcap["phantomjs.page.settings.userAgent"] = wgSettings.pop('User-Agent')
+		dcap["chrome.page.settings.userAgent"] = wgSettings.pop('User-Agent')
 		for headerName in wgSettings:
 			if headerName != 'Accept-Encoding':
-				dcap['phantomjs.page.customHeaders.{header}'.format(header=headerName)] = wgSettings[headerName]
+				dcap['chrome.page.customHeaders.{header}'.format(header=headerName)] = wgSettings[headerName]
 
-		self.selenium_pjs_driver = selenium.webdriver.PhantomJS(desired_capabilities=dcap)
-		self.selenium_pjs_driver.set_window_size(1280, 1024)
+		self.selenium_chromium_driver = selenium.webdriver.Chrome(
+				desired_capabilities = dcap,
+				chrome_options       = chrome_options,
+			)
+		self.selenium_chromium_driver.set_window_size(1280, 1024)
 
 
-	def _syncIntoSeleniumPjsWebDriver(self):
+	def _syncIntoSeleniumChromiumWebDriver(self):
 		'''
 		So selenium is completely retarded, and you can't just set cookes, you have to
 		be navigated to the domain for which you want to set cookies.
@@ -65,63 +74,61 @@ class WebGetSeleniumPjsMixin(object):
 		# 			}
 		# 	print("CDat: ", cdat)
 
-		# 	self.selenium_pjs_driver.add_cookie(cdat)
+		# 	self.selenium_chromium_driver.add_cookie(cdat)
 
 
-	def _syncOutOfPjsWebDriver(self):
-		for cookie in self.selenium_pjs_driver.get_cookies():
+	def _syncOutOfSeleniumChromiumWebDriver(self):
+		for cookie in self.selenium_chromium_driver.get_cookies():
 			self.addSeleniumCookie(cookie)
 
 
-	def getItemPhantomJS(self, itemUrl):
-		self.log.info("Fetching page for URL: '%s' with PhantomJS" % itemUrl)
+	def getItemSeleniumChromium(self, itemUrl):
+		self.log.info("Fetching page for URL: '%s' with SeleniumChromium" % itemUrl)
 
-		if not self.selenium_pjs_driver:
-			self._initPjsWebDriver()
-		self._syncIntoSeleniumPjsWebDriver()
+		if not self.selenium_chromium_driver:
+			self._initSeleniumChromiumWebDriver()
+		self._syncIntoSeleniumChromiumWebDriver()
 
-		with SeleniumCommon.load_delay_context_manager(self.selenium_pjs_driver):
-			self.selenium_pjs_driver.get(itemUrl)
+		with SeleniumCommon.load_delay_context_manager(self.selenium_chromium_driver):
+			self.selenium_chromium_driver.get(itemUrl)
 		time.sleep(3)
 
-		fileN = urllib.parse.unquote(urllib.parse.urlparse(self.selenium_pjs_driver.current_url)[2].split("/")[-1])
+		fileN = urllib.parse.unquote(urllib.parse.urlparse(self.selenium_chromium_driver.current_url)[2].split("/")[-1])
 		fileN = bs4.UnicodeDammit(fileN).unicode_markup
 
-		self._syncOutOfPjsWebDriver()
+		self._syncOutOfSeleniumChromiumWebDriver()
 
 		# Probably a bad assumption
 		mType = "text/html"
 
-		# So, self.selenium_pjs_driver.page_source appears to be the *compressed* page source as-rendered. Because reasons.
-		source = self.selenium_pjs_driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
-
-		assert source != '<head></head><body></body>'
+		# So, self.selenium_chromium_driver.page_source appears to be the *compressed* page source as-rendered. Because reasons.
+		source = self.selenium_chromium_driver.execute_script("return document.getElementsByTagName('html')[0].innerHTML")
 
 		source = "<html>"+source+"</html>"
 		return source, fileN, mType
 
 
 
-	def getHeadTitlePhantomJS(self, url, referrer=None):
-		self.getHeadPhantomJS(url, referrer)
+	def getHeadTitleSeleniumChromium(self, url, referrer=None):
+		self.getHeadSeleniumChromium(url, referrer)
 		ret = {
-			'url'   : self.selenium_pjs_driver.current_url,
-			'title' : self.selenium_pjs_driver.title,
+			'url'   : self.selenium_chromium_driver.current_url,
+			'title' : self.selenium_chromium_driver.title,
 		}
 		return ret
 
-	def getHeadPhantomJS(self, url, referrer=None):
-		self.log.info("Getting HEAD with PhantomJS")
+	def getHeadSeleniumChromium(self, url, referrer=None):
+		self.log.info("Getting HEAD with SeleniumChromium")
 
-		if not self.selenium_pjs_driver:
-			self._initPjsWebDriver()
-		self._syncIntoSeleniumPjsWebDriver()
+		if not self.selenium_chromium_driver:
+			self._initSeleniumChromiumWebDriver()
+		self._syncIntoSeleniumChromiumWebDriver()
 
 		def try_get(loc_url):
 			tries = 3
 			for x in range(9999):
 				try:
-					self.selenium_pjs_driver.get(loc_url)
+					self.selenium_chromium_driver.get(loc_url)
 					time.sleep(random.uniform(2, 6))
 					return
 				except socket.timeout as e:
@@ -131,24 +138,24 @@ class WebGetSeleniumPjsMixin(object):
 			try_get(referrer)
 		try_get(url)
 
-		self._syncOutOfPjsWebDriver()
+		self._syncOutOfSeleniumChromiumWebDriver()
 
-		return self.selenium_pjs_driver.current_url
+		return self.selenium_chromium_driver.current_url
 
 
 	def __del__(self):
-		# print("PhantomJS __del__")
-		if self.selenium_pjs_driver != None:
-			self.selenium_pjs_driver.quit()
+		# print("SeleniumChromium __del__")
+		if self.selenium_chromium_driver != None:
+			self.selenium_chromium_driver.quit()
 
 		sup = super()
 		if hasattr(sup, '__del__'):
 			sup.__del__()
 
 
-	def stepThroughCloudFlare_pjs(self, url, titleContains='', titleNotContains=''):
+	def stepThroughCloudFlare_selenium_chromium(self, url, titleContains='', titleNotContains=''):
 		'''
-		Use Selenium+PhantomJS to access a resource behind cloudflare protection.
+		Use Selenium+SeleniumChromium to access a resource behind cloudflare protection.
 
 		Params:
 			``url`` - The URL to access that is protected by cloudflare
@@ -174,12 +181,12 @@ class WebGetSeleniumPjsMixin(object):
 
 		self.log.info("Attempting to access page through cloudflare browser verification.")
 
-		if not self.selenium_pjs_driver:
-			self._initPjsWebDriver()
-		self._syncIntoSeleniumPjsWebDriver()
+		if not self.selenium_chromium_driver:
+			self._initSeleniumChromiumWebDriver()
+		self._syncIntoSeleniumChromiumWebDriver()
 
 
-		self.selenium_pjs_driver.get(url)
+		self.selenium_chromium_driver.get(url)
 
 		if titleContains:
 			condition = EC.title_contains(titleContains)
@@ -190,7 +197,7 @@ class WebGetSeleniumPjsMixin(object):
 
 
 		try:
-			WebDriverWait(self.selenium_pjs_driver, 45).until(condition)
+			WebDriverWait(self.selenium_chromium_driver, 45).until(condition)
 			success = True
 			self.log.info("Successfully accessed main page!")
 		except TimeoutException:
@@ -198,7 +205,7 @@ class WebGetSeleniumPjsMixin(object):
 			success = False
 		# Add cookies to cookiejar
 
-		self._syncOutOfPjsWebDriver()
+		self._syncOutOfSeleniumChromiumWebDriver()
 
 		self._syncCookiesFromFile()
 
