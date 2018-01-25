@@ -23,6 +23,27 @@
             ((a = (U >>> (l -= 8)) & 0xff) || (i < (L - 2))) && (r += w(a));
         }
     }
+
+    // So this decrypts down to:
+
+    // x = "0".slice(0, 1) + "4" + 'c' + "bsu".slice(0, 1) + 'b' + '' + '' + "5".slice(0, 1) + '' +
+    //     "6r".charAt(0) + '' + String.fromCharCode(52) + '' +
+    //     "9" + "4".slice(0, 1) + "e".slice(0, 1) + "b" + 'zIe'.charAt(2) + '' + "dsec".substr(0, 1) +
+    //     'Em9b'.substr(3, 1) + '' + "c" + '' + "dsec".substr(0, 1) + 'T1'.slice(1, 2) +
+    //     String.fromCharCode(0x39) + String.fromCharCode(0x61) + "" + "6su".slice(0, 1) +
+    //     "1".slice(0, 1) + '' + String.fromCharCode(98) + '82'.slice(1, 2) + "d" + 'Uo17'.substr(3, 1) +
+    //     "2sec".substr(0, 1) + "8g".charAt(0) + '' + '' + "csucur".charAt(0) + "" + '4' +
+    //     String.fromCharCode(0x37) + "" + "8" + '' + '';
+
+    // document.cookie = 'ssucu'.charAt(0) + 'usucuri'.charAt(0) + 'c' + '' + 'u' + 'r' + 'i' + '_' + 'c' +
+    //     'ls'.charAt(0) + 'os'.charAt(0) + 'su'.charAt(1) + 'dsucur'.charAt(0) + 'psu'.charAt(0) +
+    //     'rsucur'.charAt(0) + 'osucu'.charAt(0) + 'x' + '' + 'ysu'.charAt(0) + '_'.charAt(0) +
+    //     'us'.charAt(0) + 'usucuri'.charAt(0) + 'i' + '' + 'd'.charAt(0) + 's_'.charAt(1) + '6' +
+    //     '2' + '9' + '3su'.charAt(0) + 'sue'.charAt(2) + '0' + 'sucuri0'.charAt(6) +
+    //     '0su'.charAt(0) + '4' + "=" + x + ';path=/;max-age=86400';
+
+    // location.reload();
+
     e(r);
 </script>
 

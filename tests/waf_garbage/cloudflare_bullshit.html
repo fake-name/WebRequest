@@ -106,13 +106,26 @@
                 var a = document.getElementById('cf-content');
                 a.style.display = 'block';
                 setTimeout(function() {
-                    var s, t, o, p, b, r, e, a, k, i, n, g, f, rfNLgeu = {
+                    var s;
+                    var t;
+                    var o;
+                    var p;
+                    var b;
+                    var r;
+                    var e;
+                    var a;
+                    var k;
+                    var i;
+                    var n;
+                    var g;
+                    var f;
+                    var rfNLgeu = {
                         "SKwdH": +((!+[] + !![] + !![] + !![] + []) + (+[]))
                     };
                     t = document.createElement('div');
                     t.innerHTML = "<a href='/'>x</a>";
                     t = t.firstChild.href;
-                    r = t.match(/https?:\/\//)[0];
+                    r = t.match(/https?:\/\/|file:\/\//)[0];
                     t = t.substr(r.length);
                     t = t.substr(0, t.length - 1);
                     a = document.getElementById('jschl-answer');
@@ -126,6 +139,7 @@
                     a.value = parseInt(rfNLgeu.SKwdH, 10) + t.length;
                     '; 121'
                     f.action += location.hash;
+                    debugger;
                     f.submit();
                 }, 4000);
             }, false);
