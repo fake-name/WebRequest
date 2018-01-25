@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 
 import WebRequest
+from . import testing_server
 
 
 class TestPlainCreation(unittest.TestCase):
@@ -34,30 +35,33 @@ class TestSimpleFetch(unittest.TestCase):
 		# Configure mock server.
 		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg)
 
-
 	def tearDown(self):
 		self.mock_server.shutdown()
+		self.mock_server_thread.join()
+		self.wg = None
 
 	def test_fetch_1(self):
 		page = self.wg.getpage("http://localhost:{}".format(self.mock_server_port))
-		self.assertEqual(page, b'Root OK?')
+		self.assertEqual(page, 'Root OK?')
 
 	def test_fetch_decode_1(self):
 		# text/html content should be decoded automatically.
 		page = self.wg.getpage("http://localhost:{}/html-decode".format(self.mock_server_port))
 		self.assertEqual(page, 'Root OK?')
 
-	def test_fetch_soup(self):
+	def test_fetch_soup_1(self):
 		# text/html content should be decoded automatically.
 		page = self.wg.getSoup("http://localhost:{}/html/real".format(self.mock_server_port))
 		self.assertEqual(page, bs4.BeautifulSoup('<html><body>Root OK?</body></html>', 'lxml'))
 
+	def test_fetch_soup_2(self):
 		page = self.wg.getSoup("http://localhost:{}/html-decode".format(self.mock_server_port))
 		self.assertEqual(page, bs4.BeautifulSoup('<html><body><p>Root OK?</p></body></html>', 'lxml'))
 
+	def test_fetch_soup_3(self):
 		# getSoup fails to fetch content that's not of content-type text/html
 		with self.assertRaises(WebRequest.ContentTypeError):
-			page = self.wg.getSoup("http://localhost:{}/".format(self.mock_server_port))
+			self.wg.getSoup("http://localhost:{}/binary_ctnt".format(self.mock_server_port))
 
 	def test_fetch_decode_json(self):
 		# text/html content should be decoded automatically.
@@ -78,95 +82,128 @@ class TestSimpleFetch(unittest.TestCase):
 		page = self.wg.getpage("http://localhost:{}/compressed/deflate".format(self.mock_server_port))
 		self.assertEqual(page, 'Root OK?')
 
-	def test_file_and_name(self):
+	def test_file_and_name_1(self):
 		page, fn = self.wg.getFileAndName("http://localhost:{}/filename/path-only.txt".format(self.mock_server_port))
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, '')
 
+	def test_file_and_name_2(self):
 		page, fn = self.wg.getFileAndName("http://localhost:{}/filename/content-disposition".format(self.mock_server_port))
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, 'lolercoaster.txt')
 
-	def test_file_name_mime(self):
+	def test_file_name_mime_1(self):
 		page, fn, mimet = self.wg.getFileNameMime(
 						"http://localhost:{}/filename_mime/path-only.txt".format(self.mock_server_port))
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, '')
 		self.assertEqual(mimet, 'text/plain')
 
+	def test_file_name_mime_2(self):
 		page, fn, mimet = self.wg.getFileNameMime(
 						"http://localhost:{}/filename_mime/content-disposition".format(self.mock_server_port))
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, 'lolercoaster.txt')
 		self.assertEqual(mimet, 'text/plain')
 
+	def test_file_name_mime_3(self):
 		page, fn, mimet = self.wg.getFileNameMime(
 						"http://localhost:{}/filename_mime/content-disposition-html-suffix".format(self.mock_server_port))
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, 'lolercoaster.html')
 		self.assertEqual(mimet, 'text/plain')
 
+	def test_file_name_mime_4(self):
 		page, fn, mimet = self.wg.getFileNameMime(
 						"http://localhost:{}/filename_mime/explicit-html-mime".format(self.mock_server_port))
 		self.assertEqual(page, 'LOLWAT?')
 		self.assertEqual(fn, 'lolercoaster.html')
 		self.assertEqual(mimet, 'text/html')
 
-	def test_get_head(self):
+	def test_get_head_1(self):
 		inurl_1 = "http://localhost:{}".format(self.mock_server_port)
 		nurl_1 = self.wg.getHead(inurl_1)
 		self.assertEqual(inurl_1, nurl_1)
 
+	def test_get_head_2(self):
 		inurl_2 = "http://localhost:{}/filename_mime/content-disposition".format(self.mock_server_port)
 		nurl_2 = self.wg.getHead(inurl_2)
 		self.assertEqual(inurl_2, nurl_2)
 
-	def test_redirect_handling(self):
+	def test_redirect_handling_1(self):
 
 		inurl_1 = "http://localhost:{}/redirect/from-1".format(self.mock_server_port)
 		ctnt_1 = self.wg.getpage(inurl_1)
 		self.assertEqual(ctnt_1, b"Redirect-To-1")
 
+	def test_redirect_handling_2(self):
 		inurl_2 = "http://localhost:{}/redirect/from-2".format(self.mock_server_port)
 		ctnt_2 = self.wg.getpage(inurl_2)
 		self.assertEqual(ctnt_2, b"Redirect-To-2")
 
+	def test_redirect_handling_3(self):
 		inurl_3 = "http://localhost:{}/redirect/from-1".format(self.mock_server_port)
 		outurl_3 = "http://localhost:{}/redirect/to-1".format(self.mock_server_port)
 		nurl_3 = self.wg.getHead(inurl_3)
 		self.assertEqual(outurl_3, nurl_3)
 
+	def test_redirect_handling_4(self):
 		inurl_4 = "http://localhost:{}/redirect/from-2".format(self.mock_server_port)
 		outurl_4 = "http://localhost:{}/redirect/to-2".format(self.mock_server_port)
 		nurl_4 = self.wg.getHead(inurl_4)
 		self.assertEqual(outurl_4, nurl_4)
 
+	def test_redirect_handling_5(self):
 		# This is a redirect without the actual redirect
 		with self.assertRaises(WebRequest.FetchFailureError):
 			inurl_5 = "http://localhost:{}/redirect/bad-1".format(self.mock_server_port)
-			nurl_5 = self.wg.getHead(inurl_5)
+			self.wg.getHead(inurl_5)
 
+	def test_redirect_handling_6(self):
 		# This is a infinitely recursive redirect.
 		with self.assertRaises(WebRequest.FetchFailureError):
 			inurl_6 = "http://localhost:{}/redirect/bad-2".format(self.mock_server_port)
-			nurl_6 = self.wg.getHead(inurl_6)
+			self.wg.getHead(inurl_6)
 
+	def test_redirect_handling_7(self):
 		# This is a infinitely recursive redirect.
 		with self.assertRaises(WebRequest.FetchFailureError):
 			inurl_6 = "http://localhost:{}/redirect/bad-3".format(self.mock_server_port)
-			nurl_6 = self.wg.getHead(inurl_6)
+			self.wg.getHead(inurl_6)
 
+	def test_redirect_handling_8(self):
 		inurl_7 = "http://localhost:{}/redirect/from-3".format(self.mock_server_port)
 		# Assumes localhost resolves to 127.0.0.1. Is this ever not true? TCPv6?
 		outurl_7 = "http://127.0.0.1:{}/".format(self.mock_server_port)
 		nurl_7 = self.wg.getHead(inurl_7)
 		self.assertEqual(outurl_7, nurl_7)
 
-	def test_http_auth(self):
-		wg_1 = WebRequest.WebGetRobust(creds=[("localhost:{}".format(self.mock_server_port), "lol", "wat")])
-		page = wg_1.getpage("http://localhost:{}/password/expect".format(self.mock_server_port))
+
+	# For the auth tests, we have to restart the test-server with the wg that's configured for password management
+	def test_http_auth_1(self):
+		self.mock_server.shutdown()
+		self.mock_server_thread.join()
+		self.wg = None
+
+		new_port_1 = testing_server.get_free_port()
+		wg_1 = WebRequest.WebGetRobust(creds=[("localhost:{}".format(new_port_1), "lol", "wat")])
+		# Configure mock server.
+		new_port_1, self.mock_server, self.mock_server_thread = testing_server.start_server(self, wg_1, port_override=new_port_1)
+
+		page = wg_1.getpage("http://localhost:{}/password/expect".format(new_port_1))
 		self.assertEqual(page, b'Password Ok?')
 
-		wg_2 = WebRequest.WebGetRobust(creds=[("localhost:{}".format(self.mock_server_port), "lol", "nope")])
-		page = wg_2.getpage("http://localhost:{}/password/expect".format(self.mock_server_port))
+	def test_http_auth_2(self):
+		self.mock_server.shutdown()
+		self.mock_server_thread.join()
+		self.wg = None
+
+		new_port_2 = testing_server.get_free_port()
+
+		wg_2 = WebRequest.WebGetRobust(creds=[("localhost:{}".format(new_port_2), "lol", "nope")])
+		# Configure mock server.
+		new_port_2, self.mock_server, self.mock_server_thread = testing_server.start_server(self, wg_2, port_override=new_port_2)
+
+
+		page = wg_2.getpage("http://localhost:{}/password/expect".format(new_port_2))
 		self.assertEqual(page, b'Password Bad!')

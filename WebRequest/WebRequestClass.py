@@ -91,8 +91,6 @@ class WebGetRobust(
 
 		self.log = logging.getLogger(logPath)
 		# print("Webget init! Logpath = ", logPath)
-		if creds:
-			print("Have creds for a domain")
 
 		# Due to general internet people douchebaggyness, I've basically said to hell with it and decided to spoof a whole assortment of browsers
 		# It should keep people from blocking this scraper *too* easily

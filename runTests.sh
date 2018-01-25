@@ -21,8 +21,8 @@ nosetests                      \
 	--exe                      \
 	--cover-package=WebRequest \
 	--stop                     \
+	--with-cprofile             \
 
-	# tests.test_chromium.TestChromium \
 	# --nocapture
 
 coverage report --show-missing

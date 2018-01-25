@@ -29,7 +29,7 @@ class TestChromium(unittest.TestCase):
 
 	def test_fetch_1(self):
 		page = self.wg.getpage("http://localhost:{}".format(self.mock_server_port))
-		self.assertEqual(page, b'Root OK?')
+		self.assertEqual(page, 'Root OK?')
 
 	def test_fetch_chromium_1(self):
 		page, fname, mtype = self.wg.getItemChromium("http://localhost:{}".format(self.mock_server_port))
@@ -65,15 +65,15 @@ class TestChromium(unittest.TestCase):
 		purl_3 = self.wg.getHeadChromium("http://localhost:{}/redirect/bad-1".format(self.mock_server_port))
 		self.assertEqual(purl_3, url_3)
 
-	def test_head_chromium_4(self):
-		# Chromium changes infinite redirects into timeouts.
-		with self.assertRaises(ChromeController.ChromeNavigateTimedOut):
-			self.wg.getHeadChromium("http://localhost:{}/redirect/bad-2".format(self.mock_server_port))
-
-	def test_head_chromium_5(self):
-		# Chromium changes infinite redirects into timeouts.
-		with self.assertRaises(ChromeController.ChromeNavigateTimedOut):
-			self.wg.getHeadChromium("http://localhost:{}/redirect/bad-3".format(self.mock_server_port))
+	# These tests are disabled because they're stupidly slow.
+	# def test_head_chromium_4(self):
+	# 	# Chromium changes infinite redirects into timeouts.
+	# 	with self.assertRaises(ChromeController.ChromeNavigateTimedOut):
+	# 		self.wg.getHeadChromium("http://localhost:{}/redirect/bad-2".format(self.mock_server_port))
+	# def test_head_chromium_5(self):
+	# 	# Chromium changes infinite redirects into timeouts.
+	# 	with self.assertRaises(ChromeController.ChromeNavigateTimedOut):
+	# 		self.wg.getHeadChromium("http://localhost:{}/redirect/bad-3".format(self.mock_server_port))
 
 	def test_head_title_chromium_1(self):
 		pg_url = "http://localhost:{}/content/have-title".format(self.mock_server_port)

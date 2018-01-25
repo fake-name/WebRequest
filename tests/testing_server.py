@@ -18,6 +18,10 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 	# print(expected_headers)
 
 	class MockServerRequestHandler(BaseHTTPRequestHandler):
+
+		def log_message(self, format, *args):
+			return
+
 		def do_GET(self):
 			# Process an HTTP GET request and return a response with an HTTP 200 status.
 			# print("Path: ", self.path)
@@ -46,6 +50,7 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 
 			if self.path == "/":
 				self.send_response(200)
+				self.send_header('Content-type', "text/html")
 				self.end_headers()
 				self.wfile.write(b"Root OK?")
 
@@ -177,9 +182,15 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 				self.end_headers()
 
 			elif self.path == "/password/expect":
+				print("Password")
+				print(self.headers)
 
 				self.send_response(200)
 				self.end_headers()
+
+				if not 'Authorization' in self.headers:
+					self.wfile.write(b"Password not sent!!")
+					return
 
 				val = self.headers['Authorization']
 				passval = val.split(" ")[-1]
@@ -207,7 +218,6 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 				self.wfile.write(b"Binary!\x00\x01\x02\x03")
 
 
-
 	return MockServerRequestHandler
 
 def get_free_port():
@@ -218,10 +228,13 @@ def get_free_port():
 	return port
 
 
-def start_server(assertion_class, from_wg):
+def start_server(assertion_class, from_wg, port_override=None):
 
 	# Configure mock server.
-	mock_server_port = get_free_port()
+	if port_override:
+		mock_server_port = port_override
+	else:
+		mock_server_port = get_free_port()
 	mock_server = HTTPServer(('localhost', mock_server_port), capture_expected_headers(from_wg.browserHeaders, assertion_class, is_chromium=True))
 
 	# Start running mock server in a separate thread.

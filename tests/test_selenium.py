@@ -10,7 +10,7 @@ from . import testing_server
 
 class CommonTests():
 
-	def test_fetch_1(self):
+	def test_fetch_wg(self):
 		page = self.wg.getpage("http://localhost:{}".format(self.mock_server_port))
 		self.assertEqual(page, 'Root OK?')
 
@@ -20,6 +20,7 @@ class CommonTests():
 		# Note that the content isn't specified to be HTML ANYWHERE.
 		self.assertEqual(page_1, '<html><head></head><body>Root OK?</body></html>')
 
+	def test_fetch_3(self):
 		# Because PJS is retarded, it ALWAYS wraps content in html shit unless you specify the content is "text/html". If you do that, it then proceds to only
 		# add /some/ of the html tag garbage
 		page_2, fname_2, mtype_2 = self.get_item_callable("http://localhost:{}/raw-txt".format(self.mock_server_port))
@@ -29,12 +30,13 @@ class CommonTests():
 						page_2,
 						'<html><head></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">Root OK?</pre></body></html>'
 		)
-	def test_fetch_3(self):
+	def test_fetch_4(self):
 		page_1, fname_1, mtype_1 = self.get_item_callable("http://localhost:{}/content/have-title".format(self.mock_server_port))
 		# I think all this garbage is phantomjs/selenium deciding they know what I want the content to look like for me.
 		# Note that the content isn't specified to be HTML ANYWHERE.
 		self.assertEqual(page_1, '<html><head><title>I can haz title?</title></head><body>This page has a title!</body></html>')
 
+	def test_fetch_5(self):
 		# Because PJS is retarded, it ALWAYS wraps content in html shit unless you specify the content is "text/html". If you do that, it then proceds to only
 		# add /some/ of the html tag garbage
 		page_2, fname_2, mtype_2 = self.get_item_callable("http://localhost:{}/content/no-title".format(self.mock_server_port))
