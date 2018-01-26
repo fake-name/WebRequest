@@ -13,11 +13,11 @@ from . import testing_server
 
 
 
-class TestSimpleFetch(unittest.TestCase):
+class TestWafPokeThrough(unittest.TestCase):
 	def setUp(self):
 
 		self.wg = WebRequest.WebGetRobust()
-
+		self.wg.clearCookies()
 		# Configure mock server.
 		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_annoying_pjs=True)
 
@@ -26,10 +26,10 @@ class TestSimpleFetch(unittest.TestCase):
 		self.mock_server_thread.join()
 		self.wg = None
 
-	def test_sucuri_auto(self):
-		page = self.wg.getpage("http://localhost:{}/succuri_shit".format(self.mock_server_port))
-		self.assertEqual(page, 'Root OK?')
+	# def test_cloudflare_auto(self):
+	# 	page = self.wg.getpage("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port))
+	# 	self.assertEqual(page, '<html><body>CF Redirected OK?</body></html>')
 
-	def test_cloudflare_auto(self):
-		page = self.wg.getpage("http://localhost:{}/cloudflare_shit".format(self.mock_server_port))
+	def test_sucuri_auto(self):
+		page = self.wg.getpage("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port))
 		self.assertEqual(page, 'Root OK?')

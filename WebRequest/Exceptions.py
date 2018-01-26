@@ -18,8 +18,8 @@ class FetchFailureError(WebGetException):
 # "protection" bullshit
 class GarbageSiteWrapper(WebGetException):
 	pass
-class CloudFlareWrapper(WebGetException):
+class CloudFlareWrapper(GarbageSiteWrapper):
 	pass
-class SucuriWrapper(WebGetException):
+class SucuriWrapper(GarbageSiteWrapper):
 	pass
 

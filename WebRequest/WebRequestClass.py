@@ -292,16 +292,16 @@ class WebGetRobust(
 				pghandle = self.opener.open(pgreq, timeout=30)					# Get Webpage
 				# print("Gotpage")
 
-			except Exceptions.GarbageSiteWrapper as e:
-				print("garbage site:")
-				raise e
+			except Exceptions.GarbageSiteWrapper as err:
+				# print("garbage site:")
+				raise err
 
-			except urllib.error.HTTPError as e:								# Lotta logging
+			except urllib.error.HTTPError as err:								# Lotta logging
 				self.log.warning("Error opening page: %s at %s On Attempt %s.", pgreq.get_full_url(), time.ctime(time.time()), retryCount)
-				self.log.warning("Error Code: %s", e)
+				self.log.warning("Error Code: %s", err)
 
 				#traceback.print_exc()
-				lastErr = e
+				lastErr = err
 				try:
 
 					self.log.warning("Original URL: %s", requestedUrl)
@@ -309,14 +309,14 @@ class WebGetRobust(
 				except:
 					self.log.warning("And the URL could not be printed due to an encoding error")
 
-				if e.code == 404:
+				if err.code == 404:
 					#print "Unrecoverable - Page not found. Breaking"
 					self.log.critical("Unrecoverable - Page not found. Breaking")
 					break
 
 				time.sleep(self.retryDelay)
-				if e.code == 503:
-					errcontent = e.read()
+				if err.code == 503:
+					errcontent = err.read()
 					if b'This process is automatic. Your browser will redirect to your requested content shortly.' in errcontent:
 						raise Exceptions.CloudFlareWrapper("WAF Shit")
 
@@ -355,7 +355,6 @@ class WebGetRobust(
 				self.log.info("Request for URL: %s succeeded at %s On Attempt %s. Recieving...", pgreq.get_full_url(), time.ctime(time.time()), retryCount)
 				pgctnt = self.__retreiveContent(pgreq, pghandle, callBack)
 
-
 				# if __retreiveContent did not return false, it managed to fetch valid results, so break
 				if pgctnt != False:
 					break
@@ -391,7 +390,9 @@ class WebGetRobust(
 				raise
 
 		except Exceptions.SucuriWrapper:
+			print("Sucuri!")
 			if self.rules['cloudflare']:
+				self.log.warning("Sucuri failure! Doing automatic step-through.")
 				if not self.stepThroughCloudFlare(requestedUrl, titleNotContains="You are being redirected..."):
 					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!")
 				return self.__getpage(requestedUrl, *args, **kwargs)
@@ -400,7 +401,6 @@ class WebGetRobust(
 				raise
 
 	def getItem(self, itemUrl):
-
 		content, handle = self.getpage(itemUrl, returnMultiple=True)
 
 		if not content or not handle:
@@ -635,7 +635,9 @@ class WebGetRobust(
 			return pgctnt
 
 
-		except:
+		except Exceptions.GarbageSiteWrapper as err:
+			raise err
+		except Exception:
 
 			self.log.error("Exception!")
 			self.log.error(str(sys.exc_info()))
@@ -796,6 +798,17 @@ class WebGetRobust(
 		if not halting:
 			self._syncCookiesFromFile()
 		# print "Have %d cookies after reloading cookiejar" % len(self.cj)
+
+	def clearCookies(self):
+
+		locked = self.cookie_lock.acquire(timeout=5)
+		if not locked:
+			self.log.error("Failed to acquire cookie-lock!")
+			return
+		self.cj.clear()
+		self.cj.save(self.COOKIEFILE)					# save the cookies again
+		self.cj.save("cookietemp.lwp")
+		self._syncCookiesFromFile()
 
 	def getCookies(self):
 

@@ -1,10 +1,13 @@
-import unittest
+
+import uuid
 import socket
 import os
 import base64
 import zlib
 import gzip
-import bs4
+import time
+import datetime
+from http import cookies
 from http.server import BaseHTTPRequestHandler
 from http.server import HTTPServer
 from threading import Thread
@@ -12,10 +15,12 @@ from threading import Thread
 import WebRequest
 
 
-def capture_expected_headers(expected_headers, test_context, is_selenium_garbage_chromium=False, is_annoying_pjs=False):
+def capture_expected_headers(expected_headers, test_context, is_selenium_garbage_chromium=False, is_annoying_pjs=False, skip_header_checks=False):
 
 	# print("Capturing expected headers:")
 	# print(expected_headers)
+
+	cookie_key = uuid.uuid4().hex
 
 	class MockServerRequestHandler(BaseHTTPRequestHandler):
 
@@ -24,18 +29,18 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 
 		def validate_headers(self):
 			for key, value in expected_headers:
-				if (is_annoying_pjs or is_selenium_garbage_chromium) and key == 'Accept-Encoding':
+				if (is_annoying_pjs or is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept-Encoding':
 					# So PhantomJS monkeys with accept-encoding headers
 					# Just ignore that particular header, I guess.
 					pass
 
 				# Selenium is fucking retarded, and I can't override the user-agent
 				# and other assorted parameters via their API at all.
-				elif is_selenium_garbage_chromium and key == 'Accept-Language':
+				elif (is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept-Language':
 					pass
-				elif is_selenium_garbage_chromium and key == 'Accept':
+				elif (is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept':
 					pass
-				else:
+				elif not skip_header_checks:
 					v1 = value.replace(" ", "")
 					v2 = self.headers[key]
 					if v2 is None:
@@ -48,6 +53,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 			# Process an HTTP GET request and return a response with an HTTP 200 status.
 			# print("Path: ", self.path)
 			# print("Headers: ", self.headers)
+			# print("Cookie(s): ", self.headers.get_all('Cookie', failobj=[]))
 
 			self.validate_headers()
 
@@ -56,6 +62,11 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.send_header('Content-type', "text/html")
 				self.end_headers()
 				self.wfile.write(b"Root OK?")
+
+
+			elif self.path == "/favicon.ico":
+				self.send_response(404)
+				self.end_headers()
 
 			elif self.path == "/raw-txt":
 				self.send_response(200)
@@ -185,8 +196,8 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.end_headers()
 
 			elif self.path == "/password/expect":
-				print("Password")
-				print(self.headers)
+				# print("Password")
+				# print(self.headers)
 
 				self.send_response(200)
 				self.end_headers()
@@ -226,7 +237,12 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.end_headers()
 				self.wfile.write(b"Binary!\x00\x01\x02\x03")
 
+			##################################################################################################################################
+			# Sucuri validation
+			##################################################################################################################################
+
 			elif self.path == '/sucuri_shit':
+				print("Cookies:", self.headers.get_all('Cookie', failobj=[]))
 				container_dir = os.path.dirname(__file__)
 				fpath = os.path.join(container_dir, "waf_garbage", 'sucuri_garbage.html')
 				with open(fpath, "rb") as fp:
@@ -237,16 +253,77 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.end_headers()
 				self.wfile.write(plain_contents)
 
-			elif self.path == '/cloudflare_shit':
+			##################################################################################################################################
+			# Cloudflare validation
+			##################################################################################################################################
+
+			elif self.path == '/cloudflare_under_attack_shit':
+				if self.headers.get_all('Cookie', failobj=[]):
+					cook = self.headers.get_all('Cookie', failobj=[])[0]
+
+					cook_key, cook_value = cook.split("=", 1)
+
+					if cook_key == 'validate_key' and cook_value == cookie_key:
+						# if cook['']
+						self.send_response(200)
+						self.send_header('Content-type', "text/html")
+						self.end_headers()
+						self.wfile.write(b"<html><body>CF Redirected OK?</body></html>")
+
+						return
+
 				container_dir = os.path.dirname(__file__)
 				fpath = os.path.join(container_dir, "waf_garbage", 'cloudflare_bullshit.html')
 				with open(fpath, "rb") as fp:
 					plain_contents = fp.read()
 
 				self.send_response(503)
-				self.send_header('Content-type', "image/jpeg")
+				self.send_header('Content-type','text/html')
 				self.end_headers()
 				self.wfile.write(plain_contents)
+
+			elif (self.path == '/cdn-cgi/l/chk_jschl?jschl_vc=b10392d4929902df66c5d69ff703fde7&pass=1516685611.828-z5pqL%2FrL34&jschl_answer=3161' or
+				  self.path == '/cdn-cgi/l/chk_jschl?jschl_vc=b10392d4929902df66c5d69ff703fde7&pass=1516685611.828-z5pqL%2FrL34&jschl_answer=3160'):
+
+				cook = cookies.SimpleCookie()
+				cook['validate_key'] = cookie_key
+				cook['validate_key']['path'] = "/"
+				cook['validate_key']['domain'] = ""
+				expiration = datetime.datetime.now() + datetime.timedelta(days=30)
+				cook['validate_key']["expires"] = expiration.strftime("%a, %d-%b-%Y %H:%M:%S PST")
+				self.send_response(200)
+				self.send_header('Content-type', "text/html")
+
+				self.send_header('Set-Cookie', cook['validate_key'].OutputString())
+				# param = cook.output().encode("utf-8")
+				# print("Param: ", param)
+				# self.wfile.write(param)
+
+				# self.send_header('Set-Cookie', 'validate_key={}'.format(cookie_key))
+				self.end_headers()
+				# body = "<html><body>Setting cookies? {}</body></html>".format(cook.js_output())
+				body = "<html><body>Setting cookies.</body></html>"
+				self.wfile.write(body.encode("utf-8"))
+
+
+			elif self.path == '/cookie_test':
+				cook = cookies.SimpleCookie()
+				cook['validate_key'] = cookie_key
+				cook['validate_key']['path'] = "/"
+				cook['validate_key']['domain'] = ""
+				expiration = datetime.datetime.now() + datetime.timedelta(days=30)
+				cook['validate_key']["expires"] = expiration.strftime("%a, %d-%b-%Y %H:%M:%S PST")
+				self.send_response(200)
+				self.send_header('Content-type', "text/html")
+
+				self.send_header('Set-Cookie', cook['validate_key'].OutputString())
+				self.end_headers()
+				self.wfile.write(b"<html><body>CF Redirected OK?</body></html>")
+
+
+			##################################################################################################################################
+			# Handle requests for an unknown path
+			##################################################################################################################################
 
 			else:
 				test_context.assertEqual(self.path, "This shouldn't happen!")
@@ -263,7 +340,7 @@ def get_free_port():
 	return port
 
 
-def start_server(assertion_class, from_wg, port_override=None, is_selenium_garbage_chromium=False, is_annoying_pjs=False):
+def start_server(assertion_class, from_wg, port_override=None, is_selenium_garbage_chromium=False, is_annoying_pjs=False, skip_header_checks=False):
 
 	# Configure mock server.
 	if port_override:
@@ -271,8 +348,11 @@ def start_server(assertion_class, from_wg, port_override=None, is_selenium_garba
 	else:
 		mock_server_port = get_free_port()
 
-	captured_server = capture_expected_headers(from_wg.browserHeaders, assertion_class, is_selenium_garbage_chromium=is_selenium_garbage_chromium, is_annoying_pjs=is_annoying_pjs)
-	mock_server = HTTPServer(('localhost', mock_server_port), captured_server)
+	captured_server = capture_expected_headers(from_wg.browserHeaders, assertion_class,
+		is_selenium_garbage_chromium=is_selenium_garbage_chromium,
+		is_annoying_pjs=is_annoying_pjs,
+		skip_header_checks=skip_header_checks)
+	mock_server = HTTPServer(('0.0.0.0', mock_server_port), captured_server)
 
 	# Start running mock server in a separate thread.
 	# Daemon threads automatically shut down when the main process exits.
@@ -283,3 +363,12 @@ def start_server(assertion_class, from_wg, port_override=None, is_selenium_garba
 	return mock_server_port, mock_server, mock_server_thread
 
 
+
+if __name__ == '__main__':
+
+	wg = WebRequest.WebGetRobust()
+	srv = start_server(None, wg, skip_header_checks=True)
+
+	print("running server on port: ", srv)
+	while 1:
+		time.sleep(1)
