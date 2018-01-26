@@ -173,8 +173,8 @@ class TestSimpleFetch(unittest.TestCase):
 
 	def test_redirect_handling_8(self):
 		inurl_7 = "http://localhost:{}/redirect/from-3".format(self.mock_server_port)
-		# Assumes localhost resolves to 127.0.0.1. Is this ever not true? TCPv6?
-		outurl_7 = "http://127.0.0.1:{}/".format(self.mock_server_port)
+		# Assumes localhost seems to resolve to the listening address (here it's 0.0.0.0). Is this ever not true? IPv6?
+		outurl_7 = "http://0.0.0.0:{}/".format(self.mock_server_port)
 		nurl_7 = self.wg.getHead(inurl_7)
 		self.assertEqual(outurl_7, nurl_7)
 

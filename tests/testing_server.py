@@ -242,14 +242,31 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 			##################################################################################################################################
 
 			elif self.path == '/sucuri_shit':
-				print("Cookies:", self.headers.get_all('Cookie', failobj=[]))
+				# print("Fetch for ", self.path)
+				# print("Cookies:", self.headers.get_all('Cookie', failobj=[]))
+
+				if self.headers.get_all('Cookie', failobj=[]):
+					cook = self.headers.get_all('Cookie', failobj=[])[0]
+
+					cook_key, cook_value = cook.split("=", 1)
+
+					if cook_key == 'sucuri_cloudproxy_uuid_6293e0004' and cook_value == '04cbb56494ebedbcd19a61b2d728c478':
+						# if cook['']
+						self.send_response(200)
+						self.send_header('Content-type', "text/html")
+						self.end_headers()
+						self.wfile.write(b"<html><body>Sucuri Redirected OK?</body></html>")
+
+						return
+
+
 				container_dir = os.path.dirname(__file__)
 				fpath = os.path.join(container_dir, "waf_garbage", 'sucuri_garbage.html')
 				with open(fpath, "rb") as fp:
 					plain_contents = fp.read()
 
 				self.send_response(200)
-				self.send_header('Content-type', "image/jpeg")
+				self.send_header('Content-type', "text/html")
 				self.end_headers()
 				self.wfile.write(plain_contents)
 
@@ -263,7 +280,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 
 					cook_key, cook_value = cook.split("=", 1)
 
-					if cook_key == 'validate_key' and cook_value == cookie_key:
+					if cook_key == 'cloudflare_validate_key' and cook_value == cookie_key:
 						# if cook['']
 						self.send_response(200)
 						self.send_header('Content-type', "text/html")
@@ -286,20 +303,20 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				  self.path == '/cdn-cgi/l/chk_jschl?jschl_vc=b10392d4929902df66c5d69ff703fde7&pass=1516685611.828-z5pqL%2FrL34&jschl_answer=3160'):
 
 				cook = cookies.SimpleCookie()
-				cook['validate_key'] = cookie_key
-				cook['validate_key']['path'] = "/"
-				cook['validate_key']['domain'] = ""
+				cook['cloudflare_validate_key'] = cookie_key
+				cook['cloudflare_validate_key']['path'] = "/"
+				cook['cloudflare_validate_key']['domain'] = ""
 				expiration = datetime.datetime.now() + datetime.timedelta(days=30)
-				cook['validate_key']["expires"] = expiration.strftime("%a, %d-%b-%Y %H:%M:%S PST")
+				cook['cloudflare_validate_key']["expires"] = expiration.strftime("%a, %d-%b-%Y %H:%M:%S PST")
 				self.send_response(200)
 				self.send_header('Content-type', "text/html")
 
-				self.send_header('Set-Cookie', cook['validate_key'].OutputString())
+				self.send_header('Set-Cookie', cook['cloudflare_validate_key'].OutputString())
 				# param = cook.output().encode("utf-8")
 				# print("Param: ", param)
 				# self.wfile.write(param)
 
-				# self.send_header('Set-Cookie', 'validate_key={}'.format(cookie_key))
+				# self.send_header('Set-Cookie', 'cloudflare_validate_key={}'.format(cookie_key))
 				self.end_headers()
 				# body = "<html><body>Setting cookies? {}</body></html>".format(cook.js_output())
 				body = "<html><body>Setting cookies.</body></html>"
@@ -319,6 +336,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.send_header('Set-Cookie', cook['validate_key'].OutputString())
 				self.end_headers()
 				self.wfile.write(b"<html><body>CF Redirected OK?</body></html>")
+
 
 
 			##################################################################################################################################

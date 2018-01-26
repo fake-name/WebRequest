@@ -26,10 +26,10 @@ class TestWafPokeThrough(unittest.TestCase):
 		self.mock_server_thread.join()
 		self.wg = None
 
-	# def test_cloudflare_auto(self):
-	# 	page = self.wg.getpage("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port))
-	# 	self.assertEqual(page, '<html><body>CF Redirected OK?</body></html>')
+	def test_cloudflare_auto(self):
+		page = self.wg.getpage("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port))
+		self.assertEqual(page, '<html><body>CF Redirected OK?</body></html>')
 
 	def test_sucuri_auto(self):
 		page = self.wg.getpage("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port))
-		self.assertEqual(page, 'Root OK?')
+		self.assertEqual(page, '<html><body>Sucuri Redirected OK?</body></html>')

@@ -390,7 +390,7 @@ class WebGetRobust(
 				raise
 
 		except Exceptions.SucuriWrapper:
-			print("Sucuri!")
+			# print("Sucuri!")
 			if self.rules['cloudflare']:
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
 				if not self.stepThroughCloudFlare(requestedUrl, titleNotContains="You are being redirected..."):
