@@ -21,9 +21,11 @@ nosetests                      \
 	--exe                      \
 	--cover-package=WebRequest \
 	--stop                     \
-	--with-cprofile             \
+	--with-cprofile \
+	--nocapture \
+	tests.test_waf_bullshit
 
-	# --nocapture
+	# tests.test_selenium
 
 coverage report --show-missing
 

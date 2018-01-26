@@ -70,7 +70,7 @@ class TestPhantomJS(unittest.TestCase, CommonTests):
 		self.wg = WebRequest.WebGetRobust()
 
 		# Configure mock server.
-		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg)
+		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_annoying_pjs=True)
 
 		self.get_item_callable = self.wg.getItemPhantomJS
 		self.get_head_callable = self.wg.getHeadPhantomJS
@@ -107,7 +107,7 @@ class TestSeleniumChromium(unittest.TestCase, CommonTests):
 		self.wg = WebRequest.WebGetRobust()
 
 		# Configure mock server.
-		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg)
+		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_selenium_garbage_chromium=True)
 
 		self.get_item_callable = self.wg.getItemSeleniumChromium
 		self.get_head_callable = self.wg.getHeadSeleniumChromium

@@ -318,7 +318,6 @@ class WebGetRobust(
 				if e.code == 503:
 					errcontent = e.read()
 					if b'This process is automatic. Your browser will redirect to your requested content shortly.' in errcontent:
-						self.log.warning("Cloudflare failure! Doing automatic step-through.")
 						raise Exceptions.CloudFlareWrapper("WAF Shit")
 
 			except UnicodeEncodeError:
@@ -380,14 +379,15 @@ class WebGetRobust(
 			return self.__getpage(requestedUrl, *args, **kwargs)
 
 		except Exceptions.CloudFlareWrapper:
-			print("Failure?")
 			if self.rules['cloudflare']:
+				self.log.warning("Cloudflare failure! Doing automatic step-through.")
 				if not self.stepThroughCloudFlare(requestedUrl, titleNotContains='Just a moment...'):
 					raise Exceptions.FetchFailureError("Could not step through cloudflare!")
 				# Cloudflare cookie set, retrieve again
 				return self.__getpage(requestedUrl, *args, **kwargs)
 
 			else:
+				self.log.info("Cloudflare without step-through setting!")
 				raise
 
 		except Exceptions.SucuriWrapper:
@@ -396,7 +396,7 @@ class WebGetRobust(
 					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!")
 				return self.__getpage(requestedUrl, *args, **kwargs)
 			else:
-				print("not handled?")
+				self.log.info("Sucuri without step-through setting!")
 				raise
 
 	def getItem(self, itemUrl):

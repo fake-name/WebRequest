@@ -1,6 +1,6 @@
 import unittest
 import socket
-import json
+import os
 import base64
 import zlib
 import gzip
@@ -12,7 +12,7 @@ from threading import Thread
 import WebRequest
 
 
-def capture_expected_headers(expected_headers, test_context, is_chromium=False):
+def capture_expected_headers(expected_headers, test_context, is_selenium_garbage_chromium=False, is_annoying_pjs=False):
 
 	# print("Capturing expected headers:")
 	# print(expected_headers)
@@ -22,22 +22,18 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 		def log_message(self, format, *args):
 			return
 
-		def do_GET(self):
-			# Process an HTTP GET request and return a response with an HTTP 200 status.
-			# print("Path: ", self.path)
-			# print("Headers: ", self.headers)
-
+		def validate_headers(self):
 			for key, value in expected_headers:
-				if key == 'Accept-Encoding':
+				if (is_annoying_pjs or is_selenium_garbage_chromium) and key == 'Accept-Encoding':
 					# So PhantomJS monkeys with accept-encoding headers
 					# Just ignore that particular header, I guess.
 					pass
 
 				# Selenium is fucking retarded, and I can't override the user-agent
 				# and other assorted parameters via their API at all.
-				elif is_chromium and key == 'Accept-Language':
+				elif is_selenium_garbage_chromium and key == 'Accept-Language':
 					pass
-				elif is_chromium and key == 'Accept':
+				elif is_selenium_garbage_chromium and key == 'Accept':
 					pass
 				else:
 					v1 = value.replace(" ", "")
@@ -47,6 +43,13 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 					v2 = v2.replace(" ", "")
 					test_context.assertEqual(v1, v2, msg="Mismatch in header parameter {} : {} -> {}".format(key, value, self.headers[key]))
 
+
+		def do_GET(self):
+			# Process an HTTP GET request and return a response with an HTTP 200 status.
+			# print("Path: ", self.path)
+			# print("Headers: ", self.headers)
+
+			self.validate_headers()
 
 			if self.path == "/":
 				self.send_response(200)
@@ -160,7 +163,7 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 				self.send_header('location', "to-1")
 				self.end_headers()
 
-			if self.path == "/redirect/to-1":
+			elif self.path == "/redirect/to-1":
 				self.send_response(200)
 				self.end_headers()
 				self.wfile.write(b"Redirect-To-1")
@@ -170,7 +173,7 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 				self.send_header('uri', "to-2")
 				self.end_headers()
 
-			if self.path == "/redirect/to-2":
+			elif self.path == "/redirect/to-2":
 				self.send_response(200)
 				self.end_headers()
 				self.wfile.write(b"Redirect-To-2")
@@ -217,6 +220,38 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False):
 				self.end_headers()
 				self.wfile.write(b"Binary!\x00\x01\x02\x03")
 
+			elif self.path == "/binary_ctnt":
+				self.send_response(200)
+				self.send_header('Content-type', "image/jpeg")
+				self.end_headers()
+				self.wfile.write(b"Binary!\x00\x01\x02\x03")
+
+			elif self.path == '/sucuri_shit':
+				container_dir = os.path.dirname(__file__)
+				fpath = os.path.join(container_dir, "waf_garbage", 'sucuri_garbage.html')
+				with open(fpath, "rb") as fp:
+					plain_contents = fp.read()
+
+				self.send_response(200)
+				self.send_header('Content-type', "image/jpeg")
+				self.end_headers()
+				self.wfile.write(plain_contents)
+
+			elif self.path == '/cloudflare_shit':
+				container_dir = os.path.dirname(__file__)
+				fpath = os.path.join(container_dir, "waf_garbage", 'cloudflare_bullshit.html')
+				with open(fpath, "rb") as fp:
+					plain_contents = fp.read()
+
+				self.send_response(503)
+				self.send_header('Content-type', "image/jpeg")
+				self.end_headers()
+				self.wfile.write(plain_contents)
+
+			else:
+				test_context.assertEqual(self.path, "This shouldn't happen!")
+
+
 
 	return MockServerRequestHandler
 
@@ -228,14 +263,16 @@ def get_free_port():
 	return port
 
 
-def start_server(assertion_class, from_wg, port_override=None):
+def start_server(assertion_class, from_wg, port_override=None, is_selenium_garbage_chromium=False, is_annoying_pjs=False):
 
 	# Configure mock server.
 	if port_override:
 		mock_server_port = port_override
 	else:
 		mock_server_port = get_free_port()
-	mock_server = HTTPServer(('localhost', mock_server_port), capture_expected_headers(from_wg.browserHeaders, assertion_class, is_chromium=True))
+
+	captured_server = capture_expected_headers(from_wg.browserHeaders, assertion_class, is_selenium_garbage_chromium=is_selenium_garbage_chromium, is_annoying_pjs=is_annoying_pjs)
+	mock_server = HTTPServer(('localhost', mock_server_port), captured_server)
 
 	# Start running mock server in a separate thread.
 	# Daemon threads automatically shut down when the main process exits.
