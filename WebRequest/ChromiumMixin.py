@@ -20,6 +20,8 @@ class WebGetCrMixin(object):
 		super().__init__(*args, **kwargs)
 		self._cr_binary = "google-chrome"
 
+		self.navigate_timeout_secs = 10
+		self.wrapper_step_through_timeout = 20
 
 	def _syncIntoChromium(self, cr):
 		# Headers are a list of 2-tuples. We need a dict
@@ -39,7 +41,7 @@ class WebGetCrMixin(object):
 
 			self._syncIntoChromium(cr)
 
-			response = cr.blocking_navigate_and_get_source(itemUrl, timeout=10)
+			response = cr.blocking_navigate_and_get_source(itemUrl, timeout=self.navigate_timeout_secs)
 
 			raw_url = cr.get_current_url()
 			fileN = urllib.parse.unquote(urllib.parse.urlparse(raw_url)[2].split("/")[-1])
@@ -125,67 +127,54 @@ class WebGetCrMixin(object):
 		if hasattr(sup, '__del__'):
 			sup.__del__()
 
-	# def stepThroughJsWaf_cr(self, url, titleContains='', titleNotContains=''):
-	# 	'''
-	# 	Use Selenium+Chromium to access a resource behind cloudflare protection.
+	def stepThroughJsWaf_cr(self, url, titleContains='', titleNotContains=''):
+		'''
+		Use Chromium to access a resource behind WAF protection.
 
-	# 	Params:
-	# 		``url`` - The URL to access that is protected by cloudflare
-	# 		``titleContains`` - A string that is in the title of the protected page, and NOT the
-	# 			cloudflare intermediate page. The presence of this string in the page title
-	# 			is used to determine whether the cloudflare protection has been successfully
-	# 			penetrated.
+		Params:
+			``url`` - The URL to access that is protected by WAF
+			``titleContains`` - A string that is in the title of the protected page, and NOT the
+				WAF intermediate page. The presence of this string in the page title
+				is used to determine whether the WAF protection has been successfully
+				penetrated.
+			``titleContains`` - A string that is in the title of the WAF intermediate page
+				and NOT in the target page. The presence of this string in the page title
+				is used to determine whether the WAF protection has been successfully
+				penetrated.
 
-	# 	The current WebGetRobust headers are installed into the selenium browser, which
-	# 	is then used to access the protected resource.
+		The current WebGetRobust headers are installed into the selenium browser, which
+		is then used to access the protected resource.
 
-	# 	Once the protected page has properly loaded, the cloudflare access cookie is
-	# 	then extracted from the selenium browser, and installed back into the WebGetRobust
-	# 	instance, so it can continue to use the cloudflare auth in normal requests.
+		Once the protected page has properly loaded, the WAF access cookie is
+		then extracted from the selenium browser, and installed back into the WebGetRobust
+		instance, so it can continue to use the WAF auth in normal requests.
 
-	# 	'''
+		'''
 
-	# 	if (not titleContains) and (not titleNotContains):
-	# 		raise ValueError("You must pass either a string the title should contain, or a string the title shouldn't contain!")
+		if (not titleContains) and (not titleNotContains):
+			raise ValueError("You must pass either a string the title should contain, or a string the title shouldn't contain!")
 
-	# 	if titleContains and titleNotContains:
-	# 		raise ValueError("You can only pass a single conditional statement!")
+		if titleContains and titleNotContains:
+			raise ValueError("You can only pass a single conditional statement!")
 
-	# 	self.log.info("Attempting to access page through cloudflare browser verification.")
+		self.log.info("Attempting to access page through WAF browser verification.")
 
-	# 	dcap = dict(DesiredCapabilities.Chromium)
-	# 	wgSettings = dict(self.browserHeaders)
+		current_title = None
 
-	# 	# Install the headers from the WebGet class into Chromium
-	# 	dcap["Chromium.page.settings.userAgent"] = wgSettings.pop('User-Agent')
-	# 	for headerName in wgSettings:
-	# 		dcap['Chromium.page.customHeaders.{header}'.format(header=headerName)] = wgSettings[headerName]
+		with ChromeController.ChromeContext(self._cr_binary) as cr:
+			self._syncIntoChromium(cr)
+			cr.blocking_navigate(url)
 
-	# 	driver = selenium.webdriver.Chromium(desired_capabilities=dcap)
-	# 	driver.set_window_size(1024, 768)
+			for _ in range(self.wrapper_step_through_timeout):
+				time.sleep(1)
+				current_title, _ = cr.get_page_url_title()
+				if titleContains and titleContains in current_title:
+					self._syncOutOfChromium(cr)
+					return True
+				if titleNotContains and current_title and titleNotContains not in current_title:
+					self._syncOutOfChromium(cr)
+					return True
 
-	# 	driver.get(url)
+		self.log.error("Failed to step through. Current title: '%s'", current_title)
 
-	# 	if titleContains:
-	# 		condition = EC.title_contains(titleContains)
-	# 	elif titleNotContains:
-	# 		condition = title_not_contains(titleNotContains)
-	# 	else:
-	# 		raise ValueError("Wat?")
-
-	# 	try:
-	# 		WebDriverWait(driver, 20).until(condition)
-	# 		success = True
-	# 		self.log.info("Successfully accessed main page!")
-	# 	except TimeoutException:
-	# 		self.log.error("Could not pass through cloudflare blocking!")
-	# 		success = False
-	# 	# Add cookies to cookiejar
-
-	# 	for cookie in driver.get_cookies():
-	# 		self.addSeleniumCookie(cookie)
-	# 		#print cookie[u"value"]
-
-	# 	self._syncCookiesFromFile()
-
-	# 	return success
+		return False

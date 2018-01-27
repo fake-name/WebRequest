@@ -146,7 +146,7 @@ class WebGetSeleniumPjsMixin(object):
 			sup.__del__()
 
 
-	def stepThroughJsWaf_pjs(self, url, titleContains='', titleNotContains=''):
+	def stepThroughJsWaf_selenium_pjs(self, url, titleContains='', titleNotContains=''):
 		'''
 		Use Selenium+PhantomJS to access a resource behind cloudflare protection.
 

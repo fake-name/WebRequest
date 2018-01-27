@@ -210,5 +210,3 @@ class WebGetSeleniumChromiumMixin(object):
 		self._syncCookiesFromFile()
 
 		return success
-
-

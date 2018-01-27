@@ -238,6 +238,42 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.wfile.write(b"Binary!\x00\x01\x02\x03")
 
 			##################################################################################################################################
+			# Cookie stuff
+			##################################################################################################################################
+
+			elif self.path == '/cookie_test':
+				cook = cookies.SimpleCookie()
+				cook['cookie_test_key'] = cookie_key
+				cook['cookie_test_key']['path'] = "/"
+				cook['cookie_test_key']['domain'] = ""
+				expiration = datetime.datetime.now() + datetime.timedelta(days=30)
+				cook['cookie_test_key']["expires"] = expiration.strftime("%a, %d-%b-%Y %H:%M:%S PST")
+				self.send_response(200)
+				self.send_header('Content-type', "text/html")
+
+				self.send_header('Set-Cookie', cook['cookie_test_key'].OutputString())
+				self.end_headers()
+				self.wfile.write(b"<html><body>CF Cookie Test</body></html>")
+
+			elif self.path == '/cookie_require':
+				if self.headers.get_all('Cookie', failobj=[]):
+					cook = self.headers.get_all('Cookie', failobj=[])[0]
+					cook_key, cook_value = cook.split("=", 1)
+					if cook_key == 'cookie_test_key' and cook_value == cookie_key:
+						self.send_response(200)
+						self.send_header('Content-type', "text/html")
+						self.end_headers()
+						self.wfile.write(b"<html><body>Cookie forwarded properly!</body></html>")
+						return
+
+				self.send_response(200)
+				self.send_header('Content-type', "text/html")
+				self.end_headers()
+				self.wfile.write(b"<html><body>Cookie is missing</body></html>")
+
+
+
+			##################################################################################################################################
 			# Sucuri validation
 			##################################################################################################################################
 
@@ -255,7 +291,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 						self.send_response(200)
 						self.send_header('Content-type', "text/html")
 						self.end_headers()
-						self.wfile.write(b"<html><body>Sucuri Redirected OK?</body></html>")
+						self.wfile.write(b"<html><head><title>At target Sucuri page!</title></head><body>Sucuri Redirected OK?</body></html>")
 
 						return
 
@@ -285,7 +321,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 						self.send_response(200)
 						self.send_header('Content-type', "text/html")
 						self.end_headers()
-						self.wfile.write(b"<html><body>CF Redirected OK?</body></html>")
+						self.wfile.write(b"<html><head><title>At target CF page!</title></head><body>CF Redirected OK?</body></html>")
 
 						return
 
@@ -312,30 +348,11 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.send_header('Content-type', "text/html")
 
 				self.send_header('Set-Cookie', cook['cloudflare_validate_key'].OutputString())
-				# param = cook.output().encode("utf-8")
-				# print("Param: ", param)
-				# self.wfile.write(param)
-
-				# self.send_header('Set-Cookie', 'cloudflare_validate_key={}'.format(cookie_key))
 				self.end_headers()
-				# body = "<html><body>Setting cookies? {}</body></html>".format(cook.js_output())
-				body = "<html><body>Setting cookies.</body></html>"
+
+				body = "<html><body>Setting cookies.<script>window.location.href='/cloudflare_under_attack_shit'</script></body></html>"
 				self.wfile.write(body.encode("utf-8"))
 
-
-			elif self.path == '/cookie_test':
-				cook = cookies.SimpleCookie()
-				cook['validate_key'] = cookie_key
-				cook['validate_key']['path'] = "/"
-				cook['validate_key']['domain'] = ""
-				expiration = datetime.datetime.now() + datetime.timedelta(days=30)
-				cook['validate_key']["expires"] = expiration.strftime("%a, %d-%b-%Y %H:%M:%S PST")
-				self.send_response(200)
-				self.send_header('Content-type', "text/html")
-
-				self.send_header('Set-Cookie', cook['validate_key'].OutputString())
-				self.end_headers()
-				self.wfile.write(b"<html><body>CF Redirected OK?</body></html>")
 
 
 

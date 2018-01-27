@@ -388,7 +388,7 @@ class WebGetRobust(
 		except Exceptions.CloudFlareWrapper:
 			if self.rules['auto_waf']:
 				self.log.warning("Cloudflare failure! Doing automatic step-through.")
-				if not self.stepThroughJsWaf(requestedUrl, titleNotContains='Just a moment...'):
+				if not self.stepThroughCloudFlareWaf(requestedUrl):
 					raise Exceptions.FetchFailureError("Could not step through cloudflare!")
 				# Cloudflare cookie set, retrieve again
 				return self.__getpage(requestedUrl, *args, **kwargs)
@@ -401,7 +401,7 @@ class WebGetRobust(
 			# print("Sucuri!")
 			if self.rules['auto_waf']:
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
-				if not self.stepThroughJsWaf(requestedUrl, titleNotContains="You are being redirected..."):
+				if not self.stepThroughSucuriWaf(requestedUrl):
 					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!")
 				return self.__getpage(requestedUrl, *args, **kwargs)
 			else:
@@ -758,7 +758,7 @@ class WebGetRobust(
 				discard            = False,
 				comment            = None,
 				comment_url        = None,
-				rest               = {"httponly":"%s" % cookieDict['httponly']},
+				rest               = {"httponly":"%s" % cookieDict['httponly'] if 'httponly' in cookieDict else False},
 				rfc2109            = False
 			)
 
@@ -846,13 +846,19 @@ class WebGetRobust(
 			sup.__del__()
 
 
-	# Compat for old code.
-	def stepThroughCloudFlare(self, *args, **kwargs):
-		self.stepThroughJsWaf(*args, **kwargs)
+
+
+
+	def stepThroughCloudFlareWaf(self, url):
+		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
+	def stepThroughSucuriWaf(self, url):
+		return self.stepThroughJsWaf(url, titleNotContains="You are being redirected...")
 
 	def stepThroughJsWaf(self, *args, **kwargs):
 		# Shim to the underlying web browser of choice
+		return self.stepThroughJsWaf_selenium_pjs(*args, **kwargs)
 
-		return self.stepThroughJsWaf_pjs(*args, **kwargs)
 
-
+	# Compat for old code.
+	def stepThroughCloudFlare(self, *args, **kwargs):
+		self.stepThroughJsWaf(*args, **kwargs)
