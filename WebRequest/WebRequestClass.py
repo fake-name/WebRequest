@@ -415,9 +415,14 @@ class WebGetRobust(
 		if not content or not handle:
 			raise urllib.error.URLError("Failed to retreive file from page '%s'!" % itemUrl)
 
-		fileN = urllib.parse.unquote(urllib.parse.urlparse(handle.geturl())[2].split("/")[-1])
-		fileN = bs4.UnicodeDammit(fileN).unicode_markup
-		mType = handle.info()['Content-Type']
+		handle_info = handle.info()
+
+		if handle_info['Content-Disposition'] and 'filename=' in handle_info['Content-Disposition'].lower():
+			fileN = handle_info['Content-Disposition'].split("=", 1)[-1]
+		else:
+			fileN = urllib.parse.unquote(urllib.parse.urlparse(handle.geturl())[2].split("/")[-1])
+			fileN = bs4.UnicodeDammit(fileN).unicode_markup
+		mType = handle_info['Content-Type']
 
 		# If there is an encoding in the content-type (or any other info), strip it out.
 		# We don't care about the encoding, since WebFunctions will already have handled that,
@@ -428,7 +433,7 @@ class WebGetRobust(
 		# *sigh*. So minus.com is fucking up their http headers, and apparently urlencoding the
 		# mime type, because apparently they're shit at things.
 		# Anyways, fix that.
-		if '%2F' in  mType:
+		if mType and '%2F' in  mType:
 			mType = mType.replace('%2F', '/')
 
 		self.log.info("Retreived file of type '%s', name of '%s' with a size of %0.3f K", mType, fileN, len(content)/1000.0)
@@ -814,10 +819,13 @@ class WebGetRobust(
 		if not locked:
 			self.log.error("Failed to acquire cookie-lock!")
 			return
-		self.cj.clear()
-		self.cj.save(self.COOKIEFILE)					# save the cookies again
-		self.cj.save("cookietemp.lwp")
-		self._syncCookiesFromFile()
+		try:
+			self.cj.clear()
+			self.cj.save(self.COOKIEFILE)					# save the cookies again
+			self.cj.save("cookietemp.lwp")
+			self._syncCookiesFromFile()
+		finally:
+			self.cookie_lock.release()
 
 	def getCookies(self):
 

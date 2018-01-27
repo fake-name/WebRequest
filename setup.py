@@ -8,7 +8,7 @@ setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.3",
+	version="0.0.4",
 
 	# Application author details:
 	author="Connor Wolf	",
@@ -34,11 +34,11 @@ setup(
 
 	# Dependent packages (distributions)
 	install_requires=[
-		'beautifulsoup4==4.6.0',
-		'selenium==3.8.1',
-		'PySocks==1.6.8',
-		'cchardet==2.1.1',
-		'lxml==4.1.1',
-		"ChromeController==0.1.2",
+		'beautifulsoup4>=4.6.0',
+		'selenium>=3.8.1',
+		'PySocks>=1.6.8',
+		'cchardet>=2.1.1',
+		'lxml>=4.1.1',
+		"ChromeController>=0.1.2",
 	],
 )

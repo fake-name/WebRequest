@@ -125,6 +125,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.send_response(200)
 				self.end_headers()
 				self.wfile.write(b"LOLWAT?")
+
 			elif self.path == "/filename/content-disposition":
 				self.send_response(200)
 				self.send_header('Content-Disposition', "filename=lolercoaster.txt")

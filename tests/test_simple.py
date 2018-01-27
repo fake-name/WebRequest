@@ -130,6 +130,7 @@ class TestSimpleFetch(unittest.TestCase):
 		nurl_2 = self.wg.getHead(inurl_2)
 		self.assertEqual(inurl_2, nurl_2)
 
+
 	def test_redirect_handling_1(self):
 
 		inurl_1 = "http://localhost:{}/redirect/from-1".format(self.mock_server_port)
@@ -207,3 +208,52 @@ class TestSimpleFetch(unittest.TestCase):
 
 		page = wg_2.getpage("http://localhost:{}/password/expect".format(new_port_2))
 		self.assertEqual(page, b'Password Bad!')
+
+
+	def test_get_item_1(self):
+		inurl_1 = "http://localhost:{}".format(self.mock_server_port)
+		content_1, fileN_1, mType_1 = self.wg.getItem(inurl_1)
+		self.assertEqual(content_1, 'Root OK?')
+		self.assertEqual(fileN_1, '')
+		self.assertEqual(mType_1, "text/html")
+
+
+	def test_get_item_2(self):
+		inurl_2 = "http://localhost:{}/filename_mime/content-disposition".format(self.mock_server_port)
+		content_2, fileN_2, mType_2 = self.wg.getItem(inurl_2)
+
+		# Lack of an explicit mimetype makes this not get decoded
+		self.assertEqual(content_2, b'LOLWAT?')
+		self.assertEqual(fileN_2, 'lolercoaster.txt')
+		self.assertEqual(mType_2, None)
+
+
+	def test_get_item_3(self):
+		inurl_3 = "http://localhost:{}/filename/path-only.txt".format(self.mock_server_port)
+		content_3, fileN_3, mType_3 = self.wg.getItem(inurl_3)
+
+		self.assertEqual(content_3, b'LOLWAT?')
+		self.assertEqual(fileN_3, 'path-only.txt')
+		self.assertEqual(mType_3, None)
+
+	def test_get_cookies_1(self):
+		inurl_1 = "http://localhost:{}/cookie_test".format(self.mock_server_port)
+		inurl_2 = "http://localhost:{}/cookie_require".format(self.mock_server_port)
+
+		self.wg.clearCookies()
+		cookies = self.wg.getCookies()
+		self.assertEqual(list(cookies), [])
+
+		page_resp_nocook = self.wg.getpage(inurl_2)
+		self.assertEqual(page_resp_nocook, '<html><body>Cookie is missing</body></html>')
+
+
+		_ = self.wg.getpage(inurl_1)
+		cookies = self.wg.getCookies()
+		print(cookies)
+
+		page_resp_cook = self.wg.getpage(inurl_2)
+		self.assertEqual(page_resp_cook, '<html><body>Cookie forwarded properly!</body></html>')
+
+
+
