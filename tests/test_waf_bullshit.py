@@ -80,17 +80,17 @@ class TestChromiumPokeThrough(unittest.TestCase):
 		self.wg = None
 
 	def test_cloudflare_raw_chromium_1(self):
-		stepped_through = self.wg.stepThroughJsWaf_cr("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port), titleNotContains='Just a moment...')
+		stepped_through = self.wg.stepThroughJsWaf_bare_chromium("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port), titleNotContains='Just a moment...')
 		self.assertEqual(stepped_through, True)
 
 	def test_cloudflare_raw_chromium_2(self):
-		stepped_through = self.wg.stepThroughJsWaf_cr("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port), titleContains='At target CF page!')
+		stepped_through = self.wg.stepThroughJsWaf_bare_chromium("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port), titleContains='At target CF page!')
 		self.assertEqual(stepped_through, True)
 
 	def test_sucuri_raw_chromium_1(self):
-		stepped_through = self.wg.stepThroughJsWaf_cr("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port), titleNotContains="You are being redirected...")
+		stepped_through = self.wg.stepThroughJsWaf_bare_chromium("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port), titleNotContains="You are being redirected...")
 		self.assertEqual(stepped_through, True)
 
 	def test_sucuri_raw_chromium_2(self):
-		stepped_through = self.wg.stepThroughJsWaf_cr("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port), titleContains="At target Sucuri page!")
+		stepped_through = self.wg.stepThroughJsWaf_bare_chromium("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port), titleContains="At target Sucuri page!")
 		self.assertEqual(stepped_through, True)
