@@ -75,11 +75,19 @@ class WebGetRobust(
 
 	# creds is a list of 3-tuples that gets inserted into the password manager.
 	# it is structured [(top_level_url1, username1, password1), (top_level_url2, username2, password2)]
-	def __init__(self, creds=None, logPath="Main.WebRequest", cookie_lock=None,  cloudflare=True, use_socks=False, alt_cookiejar=None):
+	def __init__(self,
+			creds         = None,
+			logPath       = "Main.WebRequest",
+			cookie_lock   = None,
+			cloudflare    = True,
+			auto_waf      = True,
+			use_socks     = False,
+			alt_cookiejar = None):
+
 		super().__init__()
 
 		self.rules = {}
-		self.rules['cloudflare'] = cloudflare
+		self.rules['auto_waf'] = cloudflare or auto_waf
 		if cookie_lock:
 			self.cookie_lock = cookie_lock
 		else:
@@ -378,9 +386,9 @@ class WebGetRobust(
 			return self.__getpage(requestedUrl, *args, **kwargs)
 
 		except Exceptions.CloudFlareWrapper:
-			if self.rules['cloudflare']:
+			if self.rules['auto_waf']:
 				self.log.warning("Cloudflare failure! Doing automatic step-through.")
-				if not self.stepThroughCloudFlare(requestedUrl, titleNotContains='Just a moment...'):
+				if not self.stepThroughJsWaf(requestedUrl, titleNotContains='Just a moment...'):
 					raise Exceptions.FetchFailureError("Could not step through cloudflare!")
 				# Cloudflare cookie set, retrieve again
 				return self.__getpage(requestedUrl, *args, **kwargs)
@@ -391,9 +399,9 @@ class WebGetRobust(
 
 		except Exceptions.SucuriWrapper:
 			# print("Sucuri!")
-			if self.rules['cloudflare']:
+			if self.rules['auto_waf']:
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
-				if not self.stepThroughCloudFlare(requestedUrl, titleNotContains="You are being redirected..."):
+				if not self.stepThroughJsWaf(requestedUrl, titleNotContains="You are being redirected..."):
 					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!")
 				return self.__getpage(requestedUrl, *args, **kwargs)
 			else:
@@ -838,11 +846,13 @@ class WebGetRobust(
 			sup.__del__()
 
 
-
-
+	# Compat for old code.
 	def stepThroughCloudFlare(self, *args, **kwargs):
+		self.stepThroughJsWaf(*args, **kwargs)
+
+	def stepThroughJsWaf(self, *args, **kwargs):
 		# Shim to the underlying web browser of choice
 
-		return self.stepThroughCloudFlare_pjs(*args, **kwargs)
+		return self.stepThroughJsWaf_pjs(*args, **kwargs)
 
 

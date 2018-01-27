@@ -25,7 +25,6 @@ nosetests                      \
 
 	# --nocapture \
 	# tests.test_waf_bullshit
-
 	# tests.test_selenium
 
 coverage report --show-missing

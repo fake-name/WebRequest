@@ -125,7 +125,7 @@ class WebGetCrMixin(object):
 		if hasattr(sup, '__del__'):
 			sup.__del__()
 
-	# def stepThroughCloudFlare_cr(self, url, titleContains='', titleNotContains=''):
+	# def stepThroughJsWaf_cr(self, url, titleContains='', titleNotContains=''):
 	# 	'''
 	# 	Use Selenium+Chromium to access a resource behind cloudflare protection.
 

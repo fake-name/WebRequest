@@ -153,7 +153,7 @@ class WebGetSeleniumChromiumMixin(object):
 			sup.__del__()
 
 
-	def stepThroughCloudFlare_selenium_chromium(self, url, titleContains='', titleNotContains=''):
+	def stepThroughJsWaf_selenium_chromium(self, url, titleContains='', titleNotContains=''):
 		'''
 		Use Selenium+SeleniumChromium to access a resource behind cloudflare protection.
 
