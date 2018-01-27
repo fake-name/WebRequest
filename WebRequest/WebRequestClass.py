@@ -117,6 +117,7 @@ class WebGetRobust(
 
 		self.alt_cookiejar = alt_cookiejar
 		self.__loadCookies()
+
 	def chunkReport(self, bytesSoFar, totalSize):
 		if totalSize:
 			percent = float(bytesSoFar) / totalSize
@@ -856,7 +857,7 @@ class WebGetRobust(
 
 	def stepThroughJsWaf(self, *args, **kwargs):
 		# Shim to the underlying web browser of choice
-		return self.stepThroughJsWaf_selenium_pjs(*args, **kwargs)
+		return self.stepThroughJsWaf_bare_chromium(*args, **kwargs)
 
 
 	# Compat for old code.

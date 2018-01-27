@@ -127,7 +127,7 @@ class WebGetCrMixin(object):
 		if hasattr(sup, '__del__'):
 			sup.__del__()
 
-	def stepThroughJsWaf_cr(self, url, titleContains='', titleNotContains=''):
+	def stepThroughJsWaf_bare_chromium(self, url, titleContains='', titleNotContains=''):
 		'''
 		Use Chromium to access a resource behind WAF protection.
 
