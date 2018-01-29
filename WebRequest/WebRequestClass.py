@@ -216,7 +216,9 @@ class WebGetRobust(
 		elif not 'filename=' in info['Content-Disposition']:
 			hName = ''
 		else:
-			hName = info['Content-Disposition'].split('filename=')[1]
+			hName = info['Content-Disposition'].split('filename=')[1].strip()
+			if ((hName.startswith("'") and hName.endswith("'")) or hName.startswith('"') and hName.endswith('"')) and len(hName) >= 2:
+				hName = hName[1:-1]
 
 
 		return pgctnt, hName

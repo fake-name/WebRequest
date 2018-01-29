@@ -92,6 +92,26 @@ class TestSimpleFetch(unittest.TestCase):
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, 'lolercoaster.txt')
 
+	def test_file_and_name_3(self):
+		page, fn = self.wg.getFileAndName("http://localhost:{}/filename_mime/content-disposition-quotes-1".format(self.mock_server_port))
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'lolercoaster.html')
+
+	def test_file_and_name_4(self):
+		page, fn = self.wg.getFileAndName("http://localhost:{}/filename_mime/content-disposition-quotes-2".format(self.mock_server_port))
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'lolercoaster.html')
+
+	def test_file_and_name_5(self):
+		page, fn = self.wg.getFileAndName("http://localhost:{}/filename_mime/content-disposition-quotes-spaces-1".format(self.mock_server_port))
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'loler coaster.html')
+
+	def test_file_and_name_6(self):
+		page, fn = self.wg.getFileAndName("http://localhost:{}/filename_mime/content-disposition-quotes-spaces-2".format(self.mock_server_port))
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'loler coaster.html')
+
 	def test_file_name_mime_1(self):
 		page, fn, mimet = self.wg.getFileNameMime(
 						"http://localhost:{}/filename_mime/path-only.txt".format(self.mock_server_port))

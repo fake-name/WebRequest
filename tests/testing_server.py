@@ -149,6 +149,30 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				self.end_headers()
 				self.wfile.write(b"LOLWAT?")
 
+			elif self.path == "/filename_mime/content-disposition-quotes-1":
+				self.send_response(200)
+				self.send_header('Content-Disposition', "filename='lolercoaster.html'")
+				self.end_headers()
+				self.wfile.write(b"LOLWAT?")
+
+			elif self.path == "/filename_mime/content-disposition-quotes-2":
+				self.send_response(200)
+				self.send_header('Content-Disposition', "filename=\'lolercoaster.html\'")
+				self.end_headers()
+				self.wfile.write(b"LOLWAT?")
+
+			elif self.path == "/filename_mime/content-disposition-quotes-spaces-1":
+				self.send_response(200)
+				self.send_header('Content-Disposition', "filename='loler coaster.html'")
+				self.end_headers()
+				self.wfile.write(b"LOLWAT?")
+
+			elif self.path == "/filename_mime/content-disposition-quotes-spaces-2":
+				self.send_response(200)
+				self.send_header('Content-Disposition', "filename=\"loler coaster.html\"")
+				self.end_headers()
+				self.wfile.write(b"LOLWAT?")
+
 			elif self.path == "/filename_mime/explicit-html-mime":
 				self.send_response(200)
 				self.send_header('Content-Disposition', "filename=lolercoaster.html")
