@@ -872,4 +872,4 @@ class WebGetRobust(
 
 	# Compat for old code.
 	def stepThroughCloudFlare(self, *args, **kwargs):
-		self.stepThroughJsWaf(*args, **kwargs)
+		return self.stepThroughJsWaf(*args, **kwargs)
