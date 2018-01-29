@@ -175,6 +175,23 @@ class WebGetCrMixin(object):
 					self._syncOutOfChromium(cr)
 					return True
 
+			self._syncOutOfChromium(cr)
+
 		self.log.error("Failed to step through. Current title: '%s'", current_title)
 
 		return False
+
+	def chromiumContext(self):
+		'''
+		Return a active chromium context, useable for manual operations directly against
+		chromium.
+
+		The WebRequest user agent and other context is synchronized into the chromium
+		instance at startup, and changes are flushed back to the webrequest instance
+		from chromium at completion.
+		'''
+
+		with ChromeController.ChromeContext(self._cr_binary) as cr:
+			self._syncIntoChromium(cr)
+			yield cr
+			self._syncOutOfChromium(cr)
