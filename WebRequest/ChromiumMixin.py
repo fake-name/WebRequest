@@ -6,12 +6,21 @@ import random
 import traceback
 import urllib.parse
 import threading
+import contextlib
 import multiprocessing
 import gc
 
 import bs4
 
 import ChromeController
+
+@contextlib.contextmanager
+def _cr_context(cls):
+	with ChromeController.ChromeContext(cls._cr_binary) as cr:
+		cls._syncIntoChromium(cr)
+		yield cr
+		cls._syncOutOfChromium(cr)
+
 
 class WebGetCrMixin(object):
 	# creds is a list of 3-tuples that gets inserted into the password manager.
@@ -181,6 +190,7 @@ class WebGetCrMixin(object):
 
 		return False
 
+
 	def chromiumContext(self):
 		'''
 		Return a active chromium context, useable for manual operations directly against
@@ -190,8 +200,4 @@ class WebGetCrMixin(object):
 		instance at startup, and changes are flushed back to the webrequest instance
 		from chromium at completion.
 		'''
-
-		with ChromeController.ChromeContext(self._cr_binary) as cr:
-			self._syncIntoChromium(cr)
-			yield cr
-			self._syncOutOfChromium(cr)
+		return _cr_context(self)
