@@ -199,7 +199,7 @@ class WebGetRobust(
 					# 	tmp_err_fp.write(page)
 					raise
 
-	def getFileAndName(self, *args, **kwargs):
+	def getFileAndName(self, requestedUrl, *args, **kwargs):
 		if 'returnMultiple' in kwargs:
 			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'")
 
@@ -219,6 +219,9 @@ class WebGetRobust(
 			hName = info['Content-Disposition'].split('filename=')[1].strip()
 			if ((hName.startswith("'") and hName.endswith("'")) or hName.startswith('"') and hName.endswith('"')) and len(hName) >= 2:
 				hName = hName[1:-1]
+
+		if not hName.strip():
+			hName = urllib.parse.urlsplit(requestedUrl).path.split("/")[-1].strip()
 
 		if "/" in hName:
 			hName = hName.split("/")[-1]
