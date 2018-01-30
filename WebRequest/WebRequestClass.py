@@ -220,7 +220,8 @@ class WebGetRobust(
 			if ((hName.startswith("'") and hName.endswith("'")) or hName.startswith('"') and hName.endswith('"')) and len(hName) >= 2:
 				hName = hName[1:-1]
 
-
+		if "/" in hName:
+			hName = hName.split("/")[-1]
 		return pgctnt, hName
 
 	def getFileNameMime(self, *args, **kwargs):
