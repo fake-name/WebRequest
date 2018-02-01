@@ -380,7 +380,7 @@ class WebGetRobust(
 
 			if lastErr and nativeError:
 				raise lastErr
-			raise Exceptions.FetchFailureError("Failed to retreive page '%s'!" % (requestedUrl, ))
+			raise Exceptions.FetchFailureError("Failed to retreive page '%s': %s!" % (requestedUrl, lastErr))
 
 		if returnMultiple:
 
