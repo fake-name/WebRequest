@@ -37,7 +37,8 @@ class WebGetCrMixin(object):
 		hdict = dict(self.browserHeaders)
 		cr.update_headers(hdict)
 		for cookie in self.cj:
-			cr.set_cookie(cookie)
+			if cookie:
+				cr.set_cookie(cookie)
 
 	def _syncOutOfChromium(self, cr):
 		for cookie in cr.get_cookies():
