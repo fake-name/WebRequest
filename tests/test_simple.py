@@ -112,6 +112,19 @@ class TestSimpleFetch(unittest.TestCase):
 		self.assertEqual(page, b'LOLWAT?')
 		self.assertEqual(fn, 'loler coaster.html')
 
+	def test_file_and_name_7(self):
+		page, fn = self.wg.getFileAndName(requestedUrl="http://localhost:{}/filename_mime/content-disposition-quotes-spaces-2".format(self.mock_server_port))
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'loler coaster.html')
+	def test_file_and_name_8(self):
+		page, fn = self.wg.getFileAndName(requestedUrl="http://localhost:{}/filename_mime/content-disposition-quotes-spaces-2".format(self.mock_server_port), addlHeaders={"Referer" : 'http://www.example.org'})
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'loler coaster.html')
+	def test_file_and_name_9(self):
+		page, fn = self.wg.getFileAndName("http://localhost:{}/filename_mime/content-disposition-quotes-spaces-2".format(self.mock_server_port), addlHeaders={"Referer" : 'http://www.example.org'})
+		self.assertEqual(page, b'LOLWAT?')
+		self.assertEqual(fn, 'loler coaster.html')
+
 	def test_file_name_mime_1(self):
 		page, fn, mimet = self.wg.getFileNameMime(
 						"http://localhost:{}/filename_mime/path-only.txt".format(self.mock_server_port))
