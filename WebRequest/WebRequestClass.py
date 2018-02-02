@@ -199,32 +199,8 @@ class WebGetRobust(
 					# 	tmp_err_fp.write(page)
 					raise
 
-	def getFileAndName(self, requestedUrl, *args, **kwargs):
-		if 'returnMultiple' in kwargs:
-			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'")
-
-		if 'soup' in kwargs and kwargs['soup']:
-			raise Exceptions.ArgumentError("getFileAndName contradicts the 'soup' directive!")
-
-		kwargs["returnMultiple"] = True
-
-		pgctnt, pghandle = self.getpage(*args, **kwargs)
-
-		info = pghandle.info()
-		if not 'Content-Disposition' in info:
-			hName = ''
-		elif not 'filename=' in info['Content-Disposition']:
-			hName = ''
-		else:
-			hName = info['Content-Disposition'].split('filename=')[1].strip()
-			if ((hName.startswith("'") and hName.endswith("'")) or hName.startswith('"') and hName.endswith('"')) and len(hName) >= 2:
-				hName = hName[1:-1]
-
-		if not hName.strip():
-			hName = urllib.parse.urlsplit(requestedUrl).path.split("/")[-1].strip()
-
-		if "/" in hName:
-			hName = hName.split("/")[-1]
+	def getFileAndName(self, *args, **kwargs):
+		pgctnt, hName, mime = self.getFileNameMime(*args, **kwargs)
 		return pgctnt, hName
 
 	def getFileNameMime(self, *args, **kwargs):
@@ -245,8 +221,18 @@ class WebGetRobust(
 			hName = ''
 		else:
 			hName = info['Content-Disposition'].split('filename=')[1]
+			# Unquote filename if it's quoted.
+			if ((hName.startswith("'") and hName.endswith("'")) or hName.startswith('"') and hName.endswith('"')) and len(hName) >= 2:
+				hName = hName[1:-1]
 
 		mime = info.get_content_type()
+
+		if not hName.strip():
+			requestedUrl = pghandle.geturl()
+			hName = urllib.parse.urlsplit(requestedUrl).path.split("/")[-1].strip()
+
+		if "/" in hName:
+			hName = hName.split("/")[-1]
 
 		return pgctnt, hName, mime
 
