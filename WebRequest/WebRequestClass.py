@@ -328,28 +328,23 @@ class WebGetRobust(
 				if err.fp:
 					err_content = err.fp.read()
 
-				err_reason = err.reason()
+				err_reason = err.reason
 				err_code = err.code
-
-
-				#traceback.print_exc()
 				lastErr = err
-				try:
 
+				try:
 					self.log.warning("Original URL: %s", requestedUrl)
 					errored = True
 				except:
 					self.log.warning("And the URL could not be printed due to an encoding error")
 
 				if err.code == 404:
-					#print "Unrecoverable - Page not found. Breaking"
 					self.log.critical("Unrecoverable - Page not found. Breaking")
 					break
 
 				time.sleep(self.retryDelay)
 				if err.code == 503:
-					errcontent = err.read()
-					if b'This process is automatic. Your browser will redirect to your requested content shortly.' in errcontent:
+					if err_content and b'This process is automatic. Your browser will redirect to your requested content shortly.' in err_content:
 						raise Exceptions.CloudFlareWrapper("WAF Shit")
 
 			except UnicodeEncodeError:

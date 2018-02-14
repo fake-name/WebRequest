@@ -19,6 +19,12 @@ class FetchFailureError(WebGetException):
 		self.err_reason  = err_reason
 		self.err_code    = err_code
 
+	def __str__(self):
+		return 'Fetch Failure Error %s: %s' % (self.err_code, self.err_reason)
+
+	def __repr__(self):
+		return '<FetchFailureError %s: %r (%s)>' % (self.err_code, self.err_reason,
+			"{%s}" % self.err_content[:100])
 
 # Specialized exceptions for garbage site
 # "protection" bullshit
