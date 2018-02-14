@@ -284,6 +284,10 @@ class WebGetRobust(
 
 
 		retryCount = 0
+		err_content = None
+		err_reason = None
+		err_code = None
+
 		while 1:
 
 			pgctnt = None
@@ -320,6 +324,13 @@ class WebGetRobust(
 			except urllib.error.HTTPError as err:								# Lotta logging
 				self.log.warning("Error opening page: %s at %s On Attempt %s.", pgreq.get_full_url(), time.ctime(time.time()), retryCount)
 				self.log.warning("Error Code: %s", err)
+
+				if err.fp:
+					err_content = err.fp.read()
+
+				err_reason = err.reason()
+				err_code = err.code
+
 
 				#traceback.print_exc()
 				lastErr = err
@@ -386,7 +397,8 @@ class WebGetRobust(
 
 			if lastErr and nativeError:
 				raise lastErr
-			raise Exceptions.FetchFailureError("Failed to retreive page '%s': %s!" % (requestedUrl, lastErr))
+			raise Exceptions.FetchFailureError("Failed to retreive page '%s': %s!" % (requestedUrl, lastErr),
+				url=requestedUrl, err_content=err_content, err_reason=err_reason, err_code=err_code)
 
 		if returnMultiple:
 
@@ -402,7 +414,7 @@ class WebGetRobust(
 			if self.rules['auto_waf']:
 				self.log.warning("Cloudflare failure! Doing automatic step-through.")
 				if not self.stepThroughCloudFlareWaf(requestedUrl):
-					raise Exceptions.FetchFailureError("Could not step through cloudflare!")
+					raise Exceptions.FetchFailureError("Could not step through cloudflare!", url=requestedUrl)
 				# Cloudflare cookie set, retrieve again
 				return self.__getpage(requestedUrl, *args, **kwargs)
 
@@ -415,7 +427,7 @@ class WebGetRobust(
 			if self.rules['auto_waf']:
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
 				if not self.stepThroughSucuriWaf(requestedUrl):
-					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!")
+					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!", url=requestedUrl)
 				return self.__getpage(requestedUrl, *args, **kwargs)
 			else:
 				self.log.info("Sucuri without step-through setting!")
@@ -466,7 +478,7 @@ class WebGetRobust(
 				self.log.info("Timeout, retrying....")
 				if x >= 3:
 					self.log.error("Failure fetching: %s", url)
-					raise Exceptions.FetchFailureError("Timout when fetching %s. Error: %s" % (url, e))
+					raise Exceptions.FetchFailureError("Timout when fetching %s. Error: %s" % (url, e), url=url)
 			except urllib.error.URLError as e:
 				# Continue even in the face of cloudflare crapping it's pants
 				if e.code == 500 and e.geturl():
@@ -474,7 +486,7 @@ class WebGetRobust(
 				self.log.info("URLError, retrying....")
 				if x >= 3:
 					self.log.error("Failure fetching: %s", url)
-					raise Exceptions.FetchFailureError("URLError when fetching %s. Error: %s" % (url, e))
+					raise Exceptions.FetchFailureError("URLError when fetching %s. Error: %s" % (url, e), url=url)
 
 	######################################################################################################################################################
 	######################################################################################################################################################

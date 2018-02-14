@@ -9,7 +9,9 @@ firewall shits](https://sucuri.net/website-firewall/) that seem intent on
 breaking the internet.
 
 Built-in user-agent randomization. Support for fetching rendered content via 
-headless chrome.
+headless chrome. Built on top of my [ChromeController](https://github.com/fake-name/ChromeController) 
+project, so it can avoid some of the [spectacularly stupid design 
+decisions](https://github.com/seleniumhq/selenium-google-code-issue-archive/issues/141) in selenium.
 
 Default support for compressed transfers. 
 

@@ -21,7 +21,7 @@ nosetests                      \
 	--exe                      \
 	--cover-package=WebRequest \
 	--stop                     \
-	--with-cprofile \
+	# --with-cprofile \
 	# tests.test_simple
 	# tests.test_waf_bullshit
 	# --nocapture \
