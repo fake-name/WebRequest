@@ -148,28 +148,28 @@ class WebGetRobust(
 
 		return pgContent
 
-	def getSoup(self, *args, **kwargs):
+	def getSoup(self, requestedUrl, *args, **kwargs):
 		if 'returnMultiple' in kwargs and kwargs['returnMultiple']:
-			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true")
+			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", url=requestedUrl)
 
 		if 'soup' in kwargs and kwargs['soup']:
-			raise Exceptions.ArgumentError("getSoup contradicts the 'soup' directive!")
+			raise Exceptions.ArgumentError("getSoup contradicts the 'soup' directive!", url=requestedUrl)
 
-		page = self.getpage(*args, **kwargs)
+		page = self.getpage(requestedUrl, *args, **kwargs)
 		if isinstance(page, bytes):
-			raise Exceptions.ContentTypeError("Received content not decoded! Cannot parse!")
+			raise Exceptions.ContentTypeError("Received content not decoded! Cannot parse!", url=requestedUrl)
 
 		soup = utility.as_soup(page)
 		return soup
 
-	def getJson(self, *args, **kwargs):
+	def getJson(self, requestedUrl, *args, **kwargs):
 		if 'returnMultiple' in kwargs and kwargs['returnMultiple']:
-			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true")
+			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", url=requestedUrl)
 
 		attempts = 0
 		while 1:
 			try:
-				page = self.getpage(*args, **kwargs)
+				page = self.getpage(requestedUrl, *args, **kwargs)
 				if isinstance(page, bytes):
 					page = page.decode(utility.determine_json_encoding(page))
 					# raise ValueError("Received content not decoded! Cannot parse!")
@@ -199,7 +199,7 @@ class WebGetRobust(
 					# 	tmp_err_fp.write(page)
 					raise
 
-	def getFileAndName(self, *args, **kwargs):
+	def getFileAndName(self, requestedUrl, *args, **kwargs):
 		'''
 		Give a requested page (note: the arguments for this call are forwarded to getpage()),
 		return the content at the target URL and the filename for the target content as a
@@ -209,10 +209,10 @@ class WebGetRobust(
 		the last section of the url path segment is treated as the filename.
 		'''
 
-		pgctnt, hName, mime = self.getFileNameMime(*args, **kwargs)
+		pgctnt, hName, _ = self.getFileNameMime(requestedUrl, *args, **kwargs)
 		return pgctnt, hName
 
-	def getFileNameMime(self, *args, **kwargs):
+	def getFileNameMime(self, requestedUrl, *args, **kwargs):
 		'''
 		Give a requested page (note: the arguments for this call are forwarded to getpage()),
 		return the content at the target URL, the filename for the target content, and
@@ -225,14 +225,14 @@ class WebGetRobust(
 
 
 		if 'returnMultiple' in kwargs:
-			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'")
+			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'", url=requestedUrl)
 
 		if 'soup' in kwargs and kwargs['soup']:
-			raise Exceptions.ArgumentError("getFileAndName contradicts the 'soup' directive!")
+			raise Exceptions.ArgumentError("getFileAndName contradicts the 'soup' directive!", url=requestedUrl)
 
 		kwargs["returnMultiple"] = True
 
-		pgctnt, pghandle = self.getpage(*args, **kwargs)
+		pgctnt, pghandle = self.getpage(requestedUrl, *args, **kwargs)
 
 		info = pghandle.info()
 		if not 'Content-Disposition' in info:
@@ -345,7 +345,7 @@ class WebGetRobust(
 				time.sleep(self.retryDelay)
 				if err.code == 503:
 					if err_content and b'This process is automatic. Your browser will redirect to your requested content shortly.' in err_content:
-						raise Exceptions.CloudFlareWrapper("WAF Shit")
+						raise Exceptions.CloudFlareWrapper("WAF Shit", url=requestedUrl)
 
 			except UnicodeEncodeError:
 				self.log.critical("Unrecoverable Unicode issue retrieving page - %s", requestedUrl)
@@ -409,7 +409,7 @@ class WebGetRobust(
 			if self.rules['auto_waf']:
 				self.log.warning("Cloudflare failure! Doing automatic step-through.")
 				if not self.stepThroughCloudFlareWaf(requestedUrl):
-					raise Exceptions.FetchFailureError("Could not step through cloudflare!", url=requestedUrl)
+					raise Exceptions.CloudFlareWrapper("Could not step through cloudflare!", url=requestedUrl)
 				# Cloudflare cookie set, retrieve again
 				return self.__getpage(requestedUrl, *args, **kwargs)
 
@@ -422,7 +422,7 @@ class WebGetRobust(
 			if self.rules['auto_waf']:
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
 				if not self.stepThroughSucuriWaf(requestedUrl):
-					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!", url=requestedUrl)
+					raise Exceptions.SucuriWrapper("Could not step through Sucuri WAF bullshit!", url=requestedUrl)
 				return self.__getpage(requestedUrl, *args, **kwargs)
 			else:
 				self.log.info("Sucuri without step-through setting!")
@@ -546,7 +546,7 @@ class WebGetRobust(
 			if binaryForm:
 				self.log.info("Binary form submission!")
 				if 'data' in params:
-					raise Exceptions.ArgumentError("You cannot make a binary form post and a plain post request at the same time!")
+					raise Exceptions.ArgumentError("You cannot make a binary form post and a plain post request at the same time!", url=pgreq)
 
 				params['data']            = binaryForm.make_result()
 				headers['Content-type']   =  binaryForm.get_content_type()
@@ -573,7 +573,7 @@ class WebGetRobust(
 			pgctnt = f.read()
 
 		elif coding == "sdch":
-			raise Exceptions.ContentTypeError("Wait, someone other then google actually supports SDCH compression?")
+			raise Exceptions.ContentTypeError("Wait, someone other then google actually supports SDCH compression?", url=None)
 
 		else:
 			compType = "none"
@@ -662,7 +662,7 @@ class WebGetRobust(
 				self.log.info("Compression type = %s. Content Size compressed = %0.3fK. Decompressed = %0.3fK. File type: %s.", compType, preDecompSize, decompSize, cType)
 
 			if b"sucuri_cloudproxy_js=" in pgctnt:
-				raise Exceptions.SucuriWrapper("WAF Shit")
+				raise Exceptions.SucuriWrapper("WAF Shit", url=pgreq.get_full_url())
 			pgctnt = self.__decodeTextContent(pgctnt, cType)
 
 			return pgctnt
