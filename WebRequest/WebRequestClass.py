@@ -563,7 +563,17 @@ class WebGetRobust(
 		if coding == 'deflate':
 			compType = "deflate"
 
-			pgctnt = zlib.decompress(pgctnt, -zlib.MAX_WBITS)
+			# I don't remember where `-zlib.MAX_WBITS` came from, but it seems to be sometimes broken.
+			# ANyways, just use that as a fallback.
+			try:
+				pgctnt = zlib.decompress(pgctnt)
+			except zlib.error as e:
+				self.log.warning("ZLib decompression failed. Retrying with -zlib.MAX_WBITS")
+				try:
+					pgctnt = zlib.decompress(pgctnt, -zlib.MAX_WBITS)
+				except zlib.error:
+					raise e
+
 
 		elif coding == 'gzip':
 			compType = "gzip"
