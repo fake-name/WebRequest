@@ -150,21 +150,21 @@ class WebGetRobust(
 
 	def getSoup(self, requestedUrl, *args, **kwargs):
 		if 'returnMultiple' in kwargs and kwargs['returnMultiple']:
-			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", url=requestedUrl)
+			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", requestedUrl)
 
 		if 'soup' in kwargs and kwargs['soup']:
-			raise Exceptions.ArgumentError("getSoup contradicts the 'soup' directive!", url=requestedUrl)
+			raise Exceptions.ArgumentError("getSoup contradicts the 'soup' directive!", requestedUrl)
 
 		page = self.getpage(requestedUrl, *args, **kwargs)
 		if isinstance(page, bytes):
-			raise Exceptions.ContentTypeError("Received content not decoded! Cannot parse!", url=requestedUrl)
+			raise Exceptions.ContentTypeError("Received content not decoded! Cannot parse!", requestedUrl)
 
 		soup = utility.as_soup(page)
 		return soup
 
 	def getJson(self, requestedUrl, *args, **kwargs):
 		if 'returnMultiple' in kwargs and kwargs['returnMultiple']:
-			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", url=requestedUrl)
+			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", requestedUrl)
 
 		attempts = 0
 		while 1:
@@ -199,7 +199,7 @@ class WebGetRobust(
 					# 	tmp_err_fp.write(page)
 					raise
 
-	def getFileAndName(self, requestedUrl, *args, **kwargs):
+	def getFileAndName(self, *args, **kwargs):
 		'''
 		Give a requested page (note: the arguments for this call are forwarded to getpage()),
 		return the content at the target URL and the filename for the target content as a
@@ -209,7 +209,7 @@ class WebGetRobust(
 		the last section of the url path segment is treated as the filename.
 		'''
 
-		pgctnt, hName, _ = self.getFileNameMime(requestedUrl, *args, **kwargs)
+		pgctnt, hName, mime = self.getFileNameMime(*args, **kwargs)
 		return pgctnt, hName
 
 	def getFileNameMime(self, requestedUrl, *args, **kwargs):
@@ -225,10 +225,10 @@ class WebGetRobust(
 
 
 		if 'returnMultiple' in kwargs:
-			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'", url=requestedUrl)
+			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'", requestedUrl)
 
 		if 'soup' in kwargs and kwargs['soup']:
-			raise Exceptions.ArgumentError("getFileAndName contradicts the 'soup' directive!", url=requestedUrl)
+			raise Exceptions.ArgumentError("getFileAndName contradicts the 'soup' directive!", requestedUrl)
 
 		kwargs["returnMultiple"] = True
 
@@ -331,21 +331,23 @@ class WebGetRobust(
 				err_reason = err.reason
 				err_code = err.code
 				lastErr = err
-
 				try:
+
 					self.log.warning("Original URL: %s", requestedUrl)
 					errored = True
 				except:
 					self.log.warning("And the URL could not be printed due to an encoding error")
 
 				if err.code == 404:
+					#print "Unrecoverable - Page not found. Breaking"
 					self.log.critical("Unrecoverable - Page not found. Breaking")
 					break
 
 				time.sleep(self.retryDelay)
 				if err.code == 503:
+
 					if err_content and b'This process is automatic. Your browser will redirect to your requested content shortly.' in err_content:
-						raise Exceptions.CloudFlareWrapper("WAF Shit", url=requestedUrl)
+						raise Exceptions.CloudFlareWrapper("WAF Shit", requestedUrl)
 
 			except UnicodeEncodeError:
 				self.log.critical("Unrecoverable Unicode issue retrieving page - %s", requestedUrl)
@@ -392,8 +394,8 @@ class WebGetRobust(
 
 			if lastErr and nativeError:
 				raise lastErr
-			raise Exceptions.FetchFailureError("Failed to retreive page '%s': %s!" % (requestedUrl, lastErr),
-				url=requestedUrl, err_content=err_content, err_reason=err_reason, err_code=err_code)
+			raise Exceptions.FetchFailureError("Failed to retreive page", requestedUrl,
+				err_content=err_content, err_code=err_code, err_reason=err_reason,)
 
 		if returnMultiple:
 
@@ -409,7 +411,7 @@ class WebGetRobust(
 			if self.rules['auto_waf']:
 				self.log.warning("Cloudflare failure! Doing automatic step-through.")
 				if not self.stepThroughCloudFlareWaf(requestedUrl):
-					raise Exceptions.CloudFlareWrapper("Could not step through cloudflare!", url=requestedUrl)
+					raise Exceptions.FetchFailureError("Could not step through cloudflare!", requestedUrl)
 				# Cloudflare cookie set, retrieve again
 				return self.__getpage(requestedUrl, *args, **kwargs)
 
@@ -422,7 +424,7 @@ class WebGetRobust(
 			if self.rules['auto_waf']:
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
 				if not self.stepThroughSucuriWaf(requestedUrl):
-					raise Exceptions.SucuriWrapper("Could not step through Sucuri WAF bullshit!", url=requestedUrl)
+					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!", requestedUrl)
 				return self.__getpage(requestedUrl, *args, **kwargs)
 			else:
 				self.log.info("Sucuri without step-through setting!")
@@ -473,7 +475,7 @@ class WebGetRobust(
 				self.log.info("Timeout, retrying....")
 				if x >= 3:
 					self.log.error("Failure fetching: %s", url)
-					raise Exceptions.FetchFailureError("Timout when fetching %s. Error: %s" % (url, e), url=url)
+					raise Exceptions.FetchFailureError("Timout when fetching content", url)
 			except urllib.error.URLError as e:
 				# Continue even in the face of cloudflare crapping it's pants
 				if e.code == 500 and e.geturl():
@@ -481,7 +483,7 @@ class WebGetRobust(
 				self.log.info("URLError, retrying....")
 				if x >= 3:
 					self.log.error("Failure fetching: %s", url)
-					raise Exceptions.FetchFailureError("URLError when fetching %s. Error: %s" % (url, e), url=url)
+					raise Exceptions.FetchFailureError("URLError when fetching content", e.geturl(), err_code=e.code)
 
 	######################################################################################################################################################
 	######################################################################################################################################################
@@ -537,7 +539,12 @@ class WebGetRobust(
 			headers = {}
 			if postData != None:
 				self.log.info("Making a post-request! Params: '%s'", postData)
-				params['data'] = urllib.parse.urlencode(postData).encode("utf-8")
+				if isinstance(postData, str):
+					params['data'] = postData.encode("utf-8")
+				elif isinstance(postData, dict):
+					for key, parameter in postData.items():
+						self.log.info("	Item: '%s' -> '%s'", key, parameter)
+					params['data'] = urllib.parse.urlencode(postData).encode("utf-8")
 			if addlHeaders != None:
 				self.log.info("Have additional GET parameters!")
 				for key, parameter in addlHeaders.items():
@@ -546,7 +553,7 @@ class WebGetRobust(
 			if binaryForm:
 				self.log.info("Binary form submission!")
 				if 'data' in params:
-					raise Exceptions.ArgumentError("You cannot make a binary form post and a plain post request at the same time!", url=pgreq)
+					raise Exceptions.ArgumentError("You cannot make a binary form post and a plain post request at the same time!", pgreq)
 
 				params['data']            = binaryForm.make_result()
 				headers['Content-type']   =  binaryForm.get_content_type()
@@ -563,17 +570,7 @@ class WebGetRobust(
 		if coding == 'deflate':
 			compType = "deflate"
 
-			# I don't remember where `-zlib.MAX_WBITS` came from, but it seems to be sometimes broken.
-			# ANyways, just use that as a fallback.
-			try:
-				pgctnt = zlib.decompress(pgctnt)
-			except zlib.error as e:
-				self.log.warning("ZLib decompression failed. Retrying with -zlib.MAX_WBITS")
-				try:
-					pgctnt = zlib.decompress(pgctnt, -zlib.MAX_WBITS)
-				except zlib.error:
-					raise e
-
+			pgctnt = zlib.decompress(pgctnt, -zlib.MAX_WBITS)
 
 		elif coding == 'gzip':
 			compType = "gzip"
@@ -583,7 +580,7 @@ class WebGetRobust(
 			pgctnt = f.read()
 
 		elif coding == "sdch":
-			raise Exceptions.ContentTypeError("Wait, someone other then google actually supports SDCH compression?", url=None)
+			raise Exceptions.ContentTypeError("Wait, someone other then google actually supports SDCH compression?", pgreq)
 
 		else:
 			compType = "none"
@@ -672,7 +669,7 @@ class WebGetRobust(
 				self.log.info("Compression type = %s. Content Size compressed = %0.3fK. Decompressed = %0.3fK. File type: %s.", compType, preDecompSize, decompSize, cType)
 
 			if b"sucuri_cloudproxy_js=" in pgctnt:
-				raise Exceptions.SucuriWrapper("WAF Shit", url=pgreq.get_full_url())
+				raise Exceptions.SucuriWrapper("WAF Shit", pgreq)
 			pgctnt = self.__decodeTextContent(pgctnt, cType)
 
 			return pgctnt
