@@ -31,7 +31,7 @@ class FetchFailureError(WebGetException):
 				self.url,
 				self.err_code,
 				self.err_reason,
-				"{%s}" % self.err_content[:100]
+				"{%s}" % self.err_content
 			)
 
 # Specialized exceptions for garbage site
