@@ -327,10 +327,13 @@ class WebGetRobust(
 
 				if err.fp:
 					err_content = err.fp.read()
+					encoded = err.hdrs.get('Content-Encoding', None)
+					if encoded:
+						_, err_content = self.__decompressContent(encoded, err_content)
 
 				err_reason = err.reason
-				err_code = err.code
-				lastErr = err
+				err_code   = err.code
+				lastErr    = err
 				try:
 
 					self.log.warning("Original URL: %s", requestedUrl)
