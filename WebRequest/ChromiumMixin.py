@@ -37,7 +37,10 @@ class WebGetCrMixin(object):
 		hdict = dict(self.browserHeaders)
 		cr.update_headers(hdict)
 		for cookie in self.cj:
-			if cookie:
+			# Something, somewhere is setting cookies without a value,
+			# and that confuses chromium a LOT. Anways, just don't forward
+			# those particular cookies.
+			if cookie and cookie.value:
 				cr.set_cookie(cookie)
 
 	def _syncOutOfChromium(self, cr):
