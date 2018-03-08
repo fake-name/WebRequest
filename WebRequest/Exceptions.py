@@ -27,10 +27,10 @@ class FetchFailureError(WebGetException):
 		return self.__repr__()
 
 	def __repr__(self):
-		return '<FetchFailureError for %s -> %s: %r (%s)>' % (
-				self.url,
+		return '<FetchFailureError %s -> %r for url: %s (%s)>' % (
 				self.err_code,
 				self.err_reason,
+				self.url,
 				"{%s}" % self.err_content
 			)
 

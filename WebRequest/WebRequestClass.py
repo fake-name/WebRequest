@@ -362,9 +362,13 @@ class WebGetRobust(
 				self.log.critical("	addlHeaders:  '%s'", addlHeaders)
 				self.log.critical("	binaryForm:   '%s'", binaryForm)
 
+				err_reason = "Unicode Decode Error"
+				err_code   = -1
+				err_content = traceback.format_exc()
+
 				break
 
-			except Exception:
+			except Exception as e:
 				errored = True
 				#traceback.print_exc()
 				lastErr = sys.exc_info()
@@ -380,6 +384,10 @@ class WebGetRobust(
 					self.log.critical("And the URL could not be printed due to an encoding error")
 
 				time.sleep(self.retryDelay)
+
+				err_reason = "Unhandled general exception"
+				err_code   = -1
+				err_content = traceback.format_exc()
 
 				continue
 
@@ -398,7 +406,7 @@ class WebGetRobust(
 			if lastErr and nativeError:
 				raise lastErr
 			raise Exceptions.FetchFailureError("Failed to retreive page", requestedUrl,
-				err_content=err_content, err_code=err_code, err_reason=err_reason,)
+				err_content=err_content, err_code=err_code, err_reason=err_reason)
 
 		if returnMultiple:
 
