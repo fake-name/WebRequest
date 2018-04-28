@@ -50,7 +50,7 @@ class WebGetCrMixin(object):
 	def getItemChromium(self, itemUrl):
 		self.log.info("Fetching page for URL: '%s' with Chromium" % itemUrl)
 
-		with ChromeController.ChromeContext(self._cr_binary) as cr:
+		with ChromeController.ChromeContext(binary=self._cr_binary) as cr:
 
 			self._syncIntoChromium(cr)
 
