@@ -33,6 +33,7 @@ class WebGetCrMixin(object):
 		self.wrapper_step_through_timeout = 20
 
 	def _syncIntoChromium(self, cr):
+		cr.clear_cookies()
 		# Headers are a list of 2-tuples. We need a dict
 		hdict = dict(self.browserHeaders)
 		cr.update_headers(hdict)

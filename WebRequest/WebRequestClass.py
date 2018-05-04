@@ -82,7 +82,9 @@ class WebGetRobust(
 			cloudflare    = True,
 			auto_waf      = True,
 			use_socks     = False,
-			alt_cookiejar = None):
+			alt_cookiejar = None,
+			custom_ua     = None,
+			):
 
 		super().__init__()
 
@@ -99,10 +101,14 @@ class WebGetRobust(
 
 		self.log = logging.getLogger(logPath)
 		# print("Webget init! Logpath = ", logPath)
-
-		# Due to general internet people douchebaggyness, I've basically said to hell with it and decided to spoof a whole assortment of browsers
-		# It should keep people from blocking this scraper *too* easily
-		self.browserHeaders = Constants.getUserAgent()
+		
+		if custom_ua:
+			self.log.info("User agent overridden!")
+			self.browserHeaders = custom_ua
+		else:
+			# Due to general internet people douchebaggyness, I've basically said to hell with it and decided to spoof a whole assortment of browsers
+			# It should keep people from blocking this scraper *too* easily
+			self.browserHeaders = Constants.getUserAgent()
 
 		self.data = urllib.parse.urlencode(self.browserHeaders)
 
