@@ -3,6 +3,16 @@ import bs4
 from . import Exceptions
 
 def as_soup(str):
+
+	# I already pre-decode the content, and lxml barfs horribly when fed
+	# content with a charset specified as iso-8859-1.
+	# See https://bugs.launchpad.net/beautifulsoup/+bug/972466 and
+	# https://bugs.launchpad.net/lxml/+bug/963936
+	if 'charset=iso-8859-1' in str:
+		str = str.replace("charset=iso-8859-1", "charset=UTF-8")
+	if 'charset=ISO-8859-1' in str:
+		str = str.replace("charset=ISO-8859-1", "charset=UTF-8")
+
 	return bs4.BeautifulSoup(str, "lxml")
 
 
