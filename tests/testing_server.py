@@ -1,6 +1,8 @@
 
+import traceback
 import uuid
 import socket
+import logging
 import os
 import base64
 import zlib
@@ -15,13 +17,13 @@ from threading import Thread
 import WebRequest
 
 
-def capture_expected_headers(expected_headers, test_context, is_selenium_garbage_chromium=False, is_annoying_pjs=False, skip_header_checks=False):
+def capture_expected_headers(expected_headers, test_context, is_chromium=False, is_selenium_garbage_chromium=False, is_annoying_pjs=False, skip_header_checks=False):
 
 	# print("Capturing expected headers:")
 	# print(expected_headers)
 
 	cookie_key = uuid.uuid4().hex
-
+	log = logging.getLogger("Main.TestServer")
 	class MockServerRequestHandler(BaseHTTPRequestHandler):
 
 		def log_message(self, format, *args):
@@ -38,7 +40,7 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 				# and other assorted parameters via their API at all.
 				elif (is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept-Language':
 					pass
-				elif (is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept':
+				elif (is_chromium or is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept':
 					pass
 				elif not skip_header_checks:
 					v1 = value.replace(" ", "")
@@ -46,14 +48,10 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 					if v2 is None:
 						v2 = ""
 					v2 = v2.replace(" ", "")
-					test_context.assertEqual(v1, v2, msg="Mismatch in header parameter {} : {} -> {}".format(key, value, self.headers[key]))
+					test_context.assertEqual(v1, v2, msg="Mismatch in header parameter '{}' : '{}' -> '{}'".format(key, value, self.headers[key]))
 
 
-		def do_GET(self):
-			# Process an HTTP GET request and return a response with an HTTP 200 status.
-			# print("Path: ", self.path)
-			# print("Headers: ", self.headers)
-			# print("Cookie(s): ", self.headers.get_all('Cookie', failobj=[]))
+		def _get_handler(self):
 
 			self.validate_headers()
 
@@ -395,6 +393,20 @@ def capture_expected_headers(expected_headers, test_context, is_selenium_garbage
 
 
 
+		def do_GET(self):
+			# Process an HTTP GET request and return a response with an HTTP 200 status.
+			log.info("Request for URL path: '%s'", self.path)
+			# print("Headers: ", self.headers)
+			# print("Cookie(s): ", self.headers.get_all('Cookie', failobj=[]))
+
+			try:
+				return self._get_handler()
+			except Exception as e:
+				log.error("Exception in handler!")
+				for line in traceback.format_exc().split("\n"):
+					log.error(line)
+				raise e
+
 	return MockServerRequestHandler
 
 def get_free_port():
@@ -405,7 +417,14 @@ def get_free_port():
 	return port
 
 
-def start_server(assertion_class, from_wg, port_override=None, is_selenium_garbage_chromium=False, is_annoying_pjs=False, skip_header_checks=False):
+def start_server(assertion_class,
+			from_wg,
+			port_override                = None,
+			is_chromium                  = None,
+			is_selenium_garbage_chromium = False,
+			is_annoying_pjs              = False,
+			skip_header_checks           = False
+		):
 
 	# Configure mock server.
 	if port_override:
@@ -414,9 +433,11 @@ def start_server(assertion_class, from_wg, port_override=None, is_selenium_garba
 		mock_server_port = get_free_port()
 
 	captured_server = capture_expected_headers(from_wg.browserHeaders, assertion_class,
-		is_selenium_garbage_chromium=is_selenium_garbage_chromium,
-		is_annoying_pjs=is_annoying_pjs,
-		skip_header_checks=skip_header_checks)
+			is_chromium                  = is_chromium,
+			is_selenium_garbage_chromium = is_selenium_garbage_chromium,
+			is_annoying_pjs              = is_annoying_pjs,
+			skip_header_checks           = skip_header_checks
+		)
 	mock_server = HTTPServer(('0.0.0.0', mock_server_port), captured_server)
 
 	# Start running mock server in a separate thread.

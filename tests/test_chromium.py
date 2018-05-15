@@ -18,7 +18,7 @@ class TestChromium(unittest.TestCase):
 		self.wg = WebRequest.WebGetRobust()
 
 		# Configure mock server.
-		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg)
+		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_chromium=True)
 
 	def tearDown(self):
 		self.mock_server.shutdown()
