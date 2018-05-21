@@ -92,6 +92,9 @@ class WebGetRobust(
 		self.rules['auto_waf'] = cloudflare or auto_waf
 		if cookie_lock:
 			self.cookie_lock = cookie_lock
+		elif alt_cookiejar:
+			self.log.info("External cookie-jar specified. Not forcing cookiejar serialization.")
+			self.cookie_lock = None
 		else:
 			self.cookie_lock = COOKIEWRITELOCK
 
@@ -845,10 +848,11 @@ class WebGetRobust(
 
 	def saveCookies(self, halting=False):
 
-		locked = self.cookie_lock.acquire(timeout=5)
-		if not locked:
-			self.log.error("Failed to acquire cookie-lock!")
-			return
+		if self.cookie_lock:
+			locked = self.cookie_lock.acquire(timeout=5)
+			if not locked:
+				self.log.error("Failed to acquire cookie-lock!")
+				return
 
 		# print("Have %d cookies before saving cookiejar" % len(self.cj))
 		try:
@@ -879,7 +883,8 @@ class WebGetRobust(
 			# not informative, so just silence it.
 			# print("Possible error on exit (or just the destructor): '%s'." % e)
 		finally:
-			self.cookie_lock.release()
+			if self.cookie_lock:
+				self.cookie_lock.release()
 
 		# print("Have %d cookies after saving cookiejar" % len(self.cj))
 		if not halting:
@@ -888,30 +893,34 @@ class WebGetRobust(
 
 	def clearCookies(self):
 
-		locked = self.cookie_lock.acquire(timeout=5)
-		if not locked:
-			self.log.error("Failed to acquire cookie-lock!")
-			return
+		if self.cookie_lock:
+			locked = self.cookie_lock.acquire(timeout=5)
+			if not locked:
+				self.log.error("Failed to acquire cookie-lock!")
+				return
 		try:
 			self.cj.clear()
 			self.cj.save(self.COOKIEFILE)					# save the cookies again
 			self.cj.save("cookietemp.lwp")
 			self._syncCookiesFromFile()
 		finally:
-			self.cookie_lock.release()
+			if self.cookie_lock:
+				self.cookie_lock.release()
 
 	def getCookies(self):
 
-		locked = self.cookie_lock.acquire(timeout=5)
-		if not locked:
-			raise RuntimeError("Could not acquire lock on cookiejar")
+		if self.cookie_lock:
+			locked = self.cookie_lock.acquire(timeout=5)
+			if not locked:
+				raise RuntimeError("Could not acquire lock on cookiejar")
 
 		try:
 			# self.log.info("Trying to save cookies!")
 			if self.cj is not None:							# If cookies were used
 				self._syncCookiesFromFile()
 		finally:
-			self.cookie_lock.release()
+			if self.cookie_lock:
+				self.cookie_lock.release()
 
 		return self.cj
 
