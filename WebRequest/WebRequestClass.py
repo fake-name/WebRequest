@@ -357,8 +357,13 @@ class WebGetRobust(
 
 				time.sleep(self.retryDelay)
 				if err.code == 503:
-
 					if err_content and b'This process is automatic. Your browser will redirect to your requested content shortly.' in err_content:
+						raise Exceptions.CloudFlareWrapper("WAF Shit", requestedUrl)
+
+				# So I've been seeing this causing CF to bounce too.
+				# As such, poke through those via chromium too.
+				if err.code == 502:
+					if err_content and b'is currently offline. However, because the site uses Cloudflare\'s Always Online' in err_content:
 						raise Exceptions.CloudFlareWrapper("WAF Shit", requestedUrl)
 
 			except UnicodeEncodeError:
