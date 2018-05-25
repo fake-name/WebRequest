@@ -36,7 +36,8 @@ from . import HeaderParseMonkeyPatch
 from . import ChromiumMixin
 from . import Handlers
 from . import iri2uri
-from . import Constants
+from . import UA_Constants
+from . import Domain_Constants
 from . import Exceptions
 from . import utility
 
@@ -111,7 +112,7 @@ class WebGetRobust(
 		else:
 			# Due to general internet people douchebaggyness, I've basically said to hell with it and decided to spoof a whole assortment of browsers
 			# It should keep people from blocking this scraper *too* easily
-			self.browserHeaders = Constants.getUserAgent()
+			self.browserHeaders = UA_Constants.getUserAgent()
 
 		self.data = urllib.parse.urlencode(self.browserHeaders)
 
@@ -126,6 +127,37 @@ class WebGetRobust(
 
 		self.alt_cookiejar = alt_cookiejar
 		self.__loadCookies()
+
+
+
+	def getpage(self, requestedUrl, *args, **kwargs):
+		try:
+			return self.__getpage(requestedUrl, *args, **kwargs)
+
+		except Exceptions.CloudFlareWrapper:
+			if self.rules['auto_waf']:
+				self.log.warning("Cloudflare failure! Doing automatic step-through.")
+				if not self.stepThroughCloudFlareWaf(requestedUrl):
+					raise Exceptions.FetchFailureError("Could not step through cloudflare!", requestedUrl)
+				# Cloudflare cookie set, retrieve again
+				return self.__getpage(requestedUrl, *args, **kwargs)
+
+			else:
+				self.log.info("Cloudflare without step-through setting!")
+				raise
+
+		except Exceptions.SucuriWrapper:
+			# print("Sucuri!")
+			if self.rules['auto_waf']:
+				self.log.warning("Sucuri failure! Doing automatic step-through.")
+				if not self.stepThroughSucuriWaf(requestedUrl):
+					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!", requestedUrl)
+				return self.__getpage(requestedUrl, *args, **kwargs)
+			else:
+				self.log.info("Sucuri without step-through setting!")
+				raise
+
+
 
 	def chunkReport(self, bytesSoFar, totalSize):
 		if totalSize:
@@ -195,7 +227,7 @@ class WebGetRobust(
 					self.log.error("Retrying!")
 
 					# Scramble our current UA
-					self.browserHeaders = Constants.getUserAgent()
+					self.browserHeaders = UA_Constants.getUserAgent()
 					if self.alt_cookiejar:
 						self.cj.init_agent(new_headers=self.browserHeaders)
 
@@ -265,7 +297,129 @@ class WebGetRobust(
 
 		return pgctnt, hName, mime
 
+
+
+	def getItem(self, itemUrl):
+		content, handle = self.getpage(itemUrl, returnMultiple=True)
+
+		if not content or not handle:
+			raise urllib.error.URLError("Failed to retreive file from page '%s'!" % itemUrl)
+
+		handle_info = handle.info()
+
+		if handle_info['Content-Disposition'] and 'filename=' in handle_info['Content-Disposition'].lower():
+			fileN = handle_info['Content-Disposition'].split("=", 1)[-1]
+		else:
+			fileN = urllib.parse.unquote(urllib.parse.urlparse(handle.geturl())[2].split("/")[-1])
+			fileN = bs4.UnicodeDammit(fileN).unicode_markup
+		mType = handle_info['Content-Type']
+
+		# If there is an encoding in the content-type (or any other info), strip it out.
+		# We don't care about the encoding, since WebFunctions will already have handled that,
+		# and returned a decoded unicode object.
+		if mType and ";" in mType:
+			mType = mType.split(";")[0].strip()
+
+		# *sigh*. So minus.com is fucking up their http headers, and apparently urlencoding the
+		# mime type, because apparently they're shit at things.
+		# Anyways, fix that.
+		if mType and '%2F' in  mType:
+			mType = mType.replace('%2F', '/')
+
+		self.log.info("Retreived file of type '%s', name of '%s' with a size of %0.3f K", mType, fileN, len(content)/1000.0)
+		return content, fileN, mType
+
+	def getHead(self, url, addlHeaders=None):
+		for x in range(9999):
+			try:
+				self.log.info("Doing HTTP HEAD request for '%s'", url)
+				pgreq = self.__buildRequest(url, None, addlHeaders, None, req_class=Handlers.HeadRequest)
+				pghandle = self.opener.open(pgreq, timeout=30)
+				returl = pghandle.geturl()
+				if returl != url:
+					self.log.info("HEAD request returned a different URL '%s'", returl)
+
+				return returl
+			except socket.timeout as e:
+				self.log.info("Timeout, retrying....")
+				if x >= 3:
+					self.log.error("Failure fetching: %s", url)
+					raise Exceptions.FetchFailureError("Timout when fetching content", url)
+			except urllib.error.URLError as e:
+				# Continue even in the face of cloudflare crapping it's pants
+				if e.code == 500 and e.geturl():
+					return e.geturl()
+				self.log.info("URLError, retrying....")
+				if x >= 3:
+					self.log.error("Failure fetching: %s", url)
+					raise Exceptions.FetchFailureError("URLError when fetching content", e.geturl(), err_code=e.code)
+
+	######################################################################################################################################################
+	######################################################################################################################################################
+
+
+	def __check_suc_cookie(self, components):
+		'''
+		This is only called if we're on a known sucuri-"protected" site.
+		As such, if we do *not* have a sucuri cloudproxy cookie, we can assume we need to
+		do the normal WAF step-through.
+		'''
+		netloc = components.netloc.lower()
+
+		for cookie in self.cj:
+			if cookie.domain_specified and (cookie.domain.lower().endswith(netloc)
+				or (cookie.domain.lower().endswith("127.0.0.1") and (
+				components.path == "/sucuri_shit_3" or components.path == "/sucuri_shit_2" ))):   # Allow testing
+				if "sucuri_cloudproxy_uuid_" in cookie.name:
+					return
+		self.log.info("Missing cloudproxy cookie for known sucuri wrapped site. Doing a pre-emptive chromium fetch.")
+		raise Exceptions.SucuriWrapper("WAF Shit", str(components))
+
+	def __check_cf_cookie(self, components):
+		netloc = components.netloc.lower()
+
+		# TODO: Implement me?
+
+		# for cookie in self.cj:
+		# 	if cookie.domain_specified and (cookie.domain.lower().endswith(netloc)
+		# 		or (cookie.domain.lower().endswith("127.0.0.1") and components.path == "/sucuri_shit_2")):   # Allow testing
+
+		# 		if "sucuri_cloudproxy_uuid_" in cookie.name:
+		# 			return
+		# 		print("Target cookie!")
+		# 		print("K -> V: %s -> %s" % (cookie.name, cookie.value))
+
+		# 	print(cookie)
+		# 	print(type(cookie))
+		# 	print(cookie.domain)
+		# raise RuntimeError
+		pass
+
+	def __pre_check(self, requestedUrl):
+		'''
+		Allow the pre-emptive fetching of sites with a full browser if they're known
+		to be dick hosters.
+		'''
+		components = urllib.parse.urlsplit(requestedUrl)
+
+		netloc_l = components.netloc.lower()
+		if netloc_l in Domain_Constants.SUCURI_GARBAGE_SITE_NETLOCS:
+			self.__check_suc_cookie(components)
+		elif netloc_l in Domain_Constants.CF_GARBAGE_SITE_NETLOCS:
+			self.__check_cf_cookie(components)
+		elif components.path == '/sucuri_shit_2':
+			self.__check_suc_cookie(components)
+		elif components.path == '/sucuri_shit_3':
+			self.__check_suc_cookie(components)
+		elif components.path == '/cloudflare_under_attack_shit_2':
+			self.__check_cf_cookie(components)
+		elif components.path == '/cloudflare_under_attack_shit_3':
+			self.__check_cf_cookie(components)
+
+
 	def __getpage(self, requestedUrl, **kwargs):
+		self.__pre_check(requestedUrl)
+
 		self.log.info("Fetching content at URL: %s", requestedUrl)
 
 		# strip trailing and leading spaces.
@@ -428,88 +582,6 @@ class WebGetRobust(
 		else:
 			return pgctnt
 
-	def getpage(self, requestedUrl, *args, **kwargs):
-		try:
-			return self.__getpage(requestedUrl, *args, **kwargs)
-
-		except Exceptions.CloudFlareWrapper:
-			if self.rules['auto_waf']:
-				self.log.warning("Cloudflare failure! Doing automatic step-through.")
-				if not self.stepThroughCloudFlareWaf(requestedUrl):
-					raise Exceptions.FetchFailureError("Could not step through cloudflare!", requestedUrl)
-				# Cloudflare cookie set, retrieve again
-				return self.__getpage(requestedUrl, *args, **kwargs)
-
-			else:
-				self.log.info("Cloudflare without step-through setting!")
-				raise
-
-		except Exceptions.SucuriWrapper:
-			# print("Sucuri!")
-			if self.rules['auto_waf']:
-				self.log.warning("Sucuri failure! Doing automatic step-through.")
-				if not self.stepThroughSucuriWaf(requestedUrl):
-					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!", requestedUrl)
-				return self.__getpage(requestedUrl, *args, **kwargs)
-			else:
-				self.log.info("Sucuri without step-through setting!")
-				raise
-
-	def getItem(self, itemUrl):
-		content, handle = self.getpage(itemUrl, returnMultiple=True)
-
-		if not content or not handle:
-			raise urllib.error.URLError("Failed to retreive file from page '%s'!" % itemUrl)
-
-		handle_info = handle.info()
-
-		if handle_info['Content-Disposition'] and 'filename=' in handle_info['Content-Disposition'].lower():
-			fileN = handle_info['Content-Disposition'].split("=", 1)[-1]
-		else:
-			fileN = urllib.parse.unquote(urllib.parse.urlparse(handle.geturl())[2].split("/")[-1])
-			fileN = bs4.UnicodeDammit(fileN).unicode_markup
-		mType = handle_info['Content-Type']
-
-		# If there is an encoding in the content-type (or any other info), strip it out.
-		# We don't care about the encoding, since WebFunctions will already have handled that,
-		# and returned a decoded unicode object.
-		if mType and ";" in mType:
-			mType = mType.split(";")[0].strip()
-
-		# *sigh*. So minus.com is fucking up their http headers, and apparently urlencoding the
-		# mime type, because apparently they're shit at things.
-		# Anyways, fix that.
-		if mType and '%2F' in  mType:
-			mType = mType.replace('%2F', '/')
-
-		self.log.info("Retreived file of type '%s', name of '%s' with a size of %0.3f K", mType, fileN, len(content)/1000.0)
-		return content, fileN, mType
-
-	def getHead(self, url, addlHeaders=None):
-		for x in range(9999):
-			try:
-				self.log.info("Doing HTTP HEAD request for '%s'", url)
-				pgreq = self.__buildRequest(url, None, addlHeaders, None, req_class=Handlers.HeadRequest)
-				pghandle = self.opener.open(pgreq, timeout=30)
-				returl = pghandle.geturl()
-				if returl != url:
-					self.log.info("HEAD request returned a different URL '%s'", returl)
-
-				return returl
-			except socket.timeout as e:
-				self.log.info("Timeout, retrying....")
-				if x >= 3:
-					self.log.error("Failure fetching: %s", url)
-					raise Exceptions.FetchFailureError("Timout when fetching content", url)
-			except urllib.error.URLError as e:
-				# Continue even in the face of cloudflare crapping it's pants
-				if e.code == 500 and e.geturl():
-					return e.geturl()
-				self.log.info("URLError, retrying....")
-				if x >= 3:
-					self.log.error("Failure fetching: %s", url)
-					raise Exceptions.FetchFailureError("URLError when fetching content", e.geturl(), err_code=e.code)
-
 	######################################################################################################################################################
 	######################################################################################################################################################
 
@@ -522,7 +594,7 @@ class WebGetRobust(
 
 		# Regex is of bytes type, since we can't convert a string to unicode until we know the encoding the
 		# bytes string is using, and we need the regex to get that encoding
-		coding = re.search(rb"charset=[\'\"]?([a-zA-Z0-9\-]*)[\'\"]?", pageContent, flags=re.IGNORECASE)
+		coding = re.search(b"charset=[\'\"]?([a-zA-Z0-9\-]*)[\'\"]?", pageContent, flags=re.IGNORECASE)
 
 		cType = b""
 		charset = None
@@ -591,6 +663,9 @@ class WebGetRobust(
 			raise
 
 	def __decompressContent(self, coding, pgctnt):
+		"""
+		This is really obnoxious
+		"""
 		#preLen = len(pgctnt)
 		if coding == 'deflate':
 			compType = "deflate"
@@ -635,7 +710,7 @@ class WebGetRobust(
 			pgctnt = f.read()
 
 		elif coding == "sdch":
-			raise Exceptions.ContentTypeError("Wait, someone other then google actually supports SDCH compression?", pgreq)
+			raise Exceptions.ContentTypeError("Wait, someone other then google actually supports SDCH compression (%s)?" % pgreq)
 
 		else:
 			compType = "none"

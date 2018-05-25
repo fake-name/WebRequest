@@ -12,6 +12,33 @@ import WebRequest
 from . import testing_server
 
 
+class TestPreemptiveWrapper(unittest.TestCase):
+	def setUp(self):
+
+		self.wg = WebRequest.WebGetRobust()
+		self.wg.clearCookies()
+		# Configure mock server.
+		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_annoying_pjs=True)
+
+		# Google sets some test cookies we can look at
+		self.wg.getpage("https://www.google.com")
+
+	def tearDown(self):
+		self.mock_server.shutdown()
+		self.mock_server_thread.join()
+		self.wg = None
+
+	def test_preemptive_unwaf(self):
+		page = self.wg.getpage("http://127.0.0.1:{}/sucuri_shit_3".format(self.mock_server_port))
+		self.assertEqual(page, '<html><head><title>At target preemptive Sucuri page!</title></head><body>Preemptive waf circumvented OK (p3)?</body></html>')
+
+
+	def test_preemptive_unwaf_skip(self):
+		page = self.wg.getpage("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port))
+
+		page = self.wg.getpage("http://127.0.0.1:{}/sucuri_shit_2".format(self.mock_server_port))
+		self.assertEqual(page, '<html><head><title>At target preemptive Sucuri page!</title></head><body>Preemptive waf circumvented OK (p2)?</body></html>')
+
 
 class TestWafPokeThrough(unittest.TestCase):
 	def setUp(self):

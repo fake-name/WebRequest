@@ -8,10 +8,10 @@ setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.26",
+	version="0.0.27",
 
 	# Application author details:
-	author="Connor Wolf	",
+	author="Connor Wolf",
 	author_email="github@imaginaryindustries.com",
 
 	# Packages

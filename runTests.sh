@@ -20,9 +20,10 @@ nosetests                      \
 	--with-coverage            \
 	--exe                      \
 	--cover-package=WebRequest \
-	# --stop                     \
-	# --nocapture \
-	# tests.test_waf_bullshit.TestWafPokeThrough
+	--stop                     \
+	# --nocapture                \
+	# tests.test_waf_bullshit.TestPreemptiveWrapper
+
 	# tests.test_waf_bullshit
 	# --with-cprofile \
 	# tests.test_simple

@@ -24,7 +24,14 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 
 	cookie_key = uuid.uuid4().hex
 	log = logging.getLogger("Main.TestServer")
+
+
+	sucuri_reqs_1 = 0
+	sucuri_reqs_2 = 0
+	sucuri_reqs_3 = 0
+
 	class MockServerRequestHandler(BaseHTTPRequestHandler):
+
 
 		def log_message(self, format, *args):
 			return
@@ -52,6 +59,10 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 
 
 		def _get_handler(self):
+			# Process an HTTP GET request and return a response with an HTTP 200 status.
+			# print("Path: ", self.path)
+			# print("Headers: ", self.headers)
+			# print("Cookie(s): ", self.headers.get_all('Cookie', failobj=[]))
 
 			self.validate_headers()
 
@@ -305,7 +316,86 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 			# Sucuri validation
 			##################################################################################################################################
 
+
+
+
+
+			elif self.path == '/sucuri_shit_3':
+				# I'd like to get this down to just 2 requests (cookie bounce, and fetch).
+				# Doing that requires pulling html content out of chromium, though.
+				# Annoying.
+				nonlocal sucuri_reqs_3
+				sucuri_reqs_3 += 1
+
+				if sucuri_reqs_3 > 3:
+					raise RuntimeError("Too many requests to sucuri_shit_3 (%s)!" % sucuri_reqs_3)
+
+				if self.headers.get_all('Cookie', failobj=[]):
+					cook = self.headers.get_all('Cookie', failobj=[])[0]
+
+					cook_key, cook_value = cook.split("=", 1)
+
+					if cook_key == 'sucuri_cloudproxy_uuid_6293e0004' and cook_value == '04cbb56494ebedbcd19a61b2d728c478':
+						# if cook['']
+						self.send_response(200)
+						self.send_header('Content-type', "text/html")
+						self.end_headers()
+						self.wfile.write(b"<html><head><title>At target preemptive Sucuri page!</title></head><body>Preemptive waf circumvented OK (p3)?</body></html>")
+
+						return
+
+
+				container_dir = os.path.dirname(__file__)
+				fpath = os.path.join(container_dir, "waf_garbage", 'sucuri_garbage.html')
+				with open(fpath, "rb") as fp:
+					plain_contents = fp.read()
+
+				self.send_response(200)
+				self.send_header('Content-type', "text/html")
+				self.end_headers()
+				self.wfile.write(plain_contents)
+
+			elif self.path == '/sucuri_shit_2':
+				# This particular path is the one we should already have a cookie for.
+				# As such, we expect one request only
+				nonlocal sucuri_reqs_2
+				sucuri_reqs_2 += 1
+
+				if sucuri_reqs_2 > 1:
+					raise RuntimeError("Too many requests to sucuri_shit_2 (%s)!" % sucuri_reqs_2)
+
+				if self.headers.get_all('Cookie', failobj=[]):
+					cook = self.headers.get_all('Cookie', failobj=[])[0]
+
+					cook_key, cook_value = cook.split("=", 1)
+
+					if cook_key == 'sucuri_cloudproxy_uuid_6293e0004' and cook_value == '04cbb56494ebedbcd19a61b2d728c478':
+						# if cook['']
+						self.send_response(200)
+						self.send_header('Content-type', "text/html")
+						self.end_headers()
+						self.wfile.write(b"<html><head><title>At target preemptive Sucuri page!</title></head><body>Preemptive waf circumvented OK (p2)?</body></html>")
+
+						return
+
+
+				container_dir = os.path.dirname(__file__)
+				fpath = os.path.join(container_dir, "waf_garbage", 'sucuri_garbage.html')
+				with open(fpath, "rb") as fp:
+					plain_contents = fp.read()
+
+				self.send_response(200)
+				self.send_header('Content-type', "text/html")
+				self.end_headers()
+				self.wfile.write(plain_contents)
+
 			elif self.path == '/sucuri_shit':
+				nonlocal sucuri_reqs_1
+				sucuri_reqs_1 += 1
+
+				if sucuri_reqs_1 > 4:
+					raise RuntimeError("Too many requests to sucuri_shit (%s)!" % sucuri_reqs_1)
+
 				# print("Fetch for ", self.path)
 				# print("Cookies:", self.headers.get_all('Cookie', failobj=[]))
 
@@ -337,6 +427,31 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 			##################################################################################################################################
 			# Cloudflare validation
 			##################################################################################################################################
+
+			elif self.path == '/cloudflare_under_attack_shit_2':
+				if self.headers.get_all('Cookie', failobj=[]):
+					cook = self.headers.get_all('Cookie', failobj=[])[0]
+
+					cook_key, cook_value = cook.split("=", 1)
+
+					if cook_key == 'cloudflare_validate_key' and cook_value == cookie_key:
+						# if cook['']
+						self.send_response(200)
+						self.send_header('Content-type', "text/html")
+						self.end_headers()
+						self.wfile.write(b"<html><head><title>At target CF page!</title></head><body>CF Redirected OK?</body></html>")
+
+						return
+
+				container_dir = os.path.dirname(__file__)
+				fpath = os.path.join(container_dir, "waf_garbage", 'cloudflare_bullshit.html')
+				with open(fpath, "rb") as fp:
+					plain_contents = fp.read()
+
+				self.send_response(503)
+				self.send_header('Content-type','text/html')
+				self.end_headers()
+				self.wfile.write(plain_contents)
 
 			elif self.path == '/cloudflare_under_attack_shit':
 				if self.headers.get_all('Cookie', failobj=[]):
@@ -434,8 +549,8 @@ def start_server(assertion_class,
 
 	captured_server = capture_expected_headers(from_wg.browserHeaders, assertion_class,
 			is_chromium                  = is_chromium,
-			is_selenium_garbage_chromium = is_selenium_garbage_chromium,
-			is_annoying_pjs              = is_annoying_pjs,
+		is_selenium_garbage_chromium=is_selenium_garbage_chromium,
+		is_annoying_pjs=is_annoying_pjs,
 			skip_header_checks           = skip_header_checks
 		)
 	mock_server = HTTPServer(('0.0.0.0', mock_server_port), captured_server)
