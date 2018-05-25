@@ -26,7 +26,8 @@ setup(
 	# license="LICENSE.txt",
 	description="Like `requests`, but shittier.",
 
-	long_description=open("README.md").read(),
+	long_description              = open("README.md").read(),
+	long_description_content_type = "text/markdown",
 
 	dependency_links=[
 		'https://github.com/fake-name/ChromeController/tarball/master#egg=ChromeController-0.1.2',
