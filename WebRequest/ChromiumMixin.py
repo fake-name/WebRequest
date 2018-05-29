@@ -71,6 +71,14 @@ class WebGetCrMixin(object):
 
 		# So, self._cr.page_source appears to be the *compressed* page source as-rendered. Because reasons.
 		content = response['content']
+
+		if isinstance(content, bytes):
+			self._check_waf(content, itemUrl)
+		elif isinstance(content, str):
+			self._check_waf(content.encode("UTF-8"), itemUrl)
+		else:
+			self.log.error("Unknown type of content return: %s" % (type(content), ))
+
 		return content, fileN, mType
 
 	def getHeadTitleChromium(self, url, referrer=None):
@@ -131,6 +139,8 @@ class WebGetCrMixin(object):
 			fileN = ''
 			self._syncOutOfChromium(cr)
 
+
+		self._check_waf(content.encode("UTF-8"), url)
 
 		return content, fileN, mType
 

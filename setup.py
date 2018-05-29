@@ -8,7 +8,7 @@ setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.28",
+	version="0.0.31",
 
 	# Application author details:
 	author="Connor Wolf",

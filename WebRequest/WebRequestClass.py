@@ -511,14 +511,14 @@ class WebGetRobust(
 
 				time.sleep(self.retryDelay)
 				if err.code == 503:
-					if err_content and b'This process is automatic. Your browser will redirect to your requested content shortly.' in err_content:
-						raise Exceptions.CloudFlareWrapper("WAF Shit", requestedUrl)
+					if err_content:
+						self._check_waf(err_content, requestedUrl)
 
 				# So I've been seeing this causing CF to bounce too.
 				# As such, poke through those via chromium too.
 				if err.code == 502:
-					if err_content and b'is currently offline. However, because the site uses Cloudflare\'s Always Online' in err_content:
-						raise Exceptions.CloudFlareWrapper("WAF Shit", requestedUrl)
+					if err_content:
+						self._check_waf(err_content, requestedUrl)
 
 			except UnicodeEncodeError:
 				self.log.critical("Unrecoverable Unicode issue retrieving page - %s", requestedUrl)
@@ -798,8 +798,8 @@ class WebGetRobust(
 			else:
 				self.log.info("Compression type = %s. Content Size compressed = %0.3fK. Decompressed = %0.3fK. File type: %s.", compType, preDecompSize, decompSize, cType)
 
-			if b"sucuri_cloudproxy_js=" in pgctnt:
-				raise Exceptions.SucuriWrapper("WAF Shit", pgreq)
+			self._check_waf(pgctnt, pgreq.get_full_url())
+
 			pgctnt = self.__decodeTextContent(pgctnt, cType)
 
 			return pgctnt
@@ -830,6 +830,19 @@ class WebGetRobust(
 
 		# postData expects a dict
 		# addlHeaders also expects a dict
+
+	def _check_waf(self, pageContent, pageUrl):
+		assert isinstance(pageContent, bytes), "Item pageContent must be of type bytes, received %s" % (type(pageContent), )
+		assert isinstance(pageUrl, str), "Item pageUrl must be of type str, received %s" % (type(pageUrl), )
+
+		if b"sucuri_cloudproxy_js=" in pageContent:
+			raise Exceptions.SucuriWrapper("WAF Shit", pageUrl)
+
+		if b'This process is automatic. Your browser will redirect to your requested content shortly.' in pageContent:
+			raise Exceptions.CloudFlareWrapper("WAF Shit", pageUrl)
+
+		if b'is currently offline. However, because the site uses Cloudflare\'s Always Online' in pageContent:
+			raise Exceptions.CloudFlareWrapper("WAF Shit", pageUrl)
 
 	######################################################################################################################################################
 	######################################################################################################################################################
