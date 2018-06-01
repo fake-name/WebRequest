@@ -553,7 +553,16 @@ def start_server(assertion_class,
 		is_annoying_pjs=is_annoying_pjs,
 			skip_header_checks           = skip_header_checks
 		)
-	mock_server = HTTPServer(('0.0.0.0', mock_server_port), captured_server)
+	retries = 4
+
+	for x in range(retries + 1):
+		try:
+			mock_server = HTTPServer(('0.0.0.0', mock_server_port), captured_server)
+			break
+		except OSError:
+			time.sleep(0.2)
+			if x >= retries:
+				raise
 
 	# Start running mock server in a separate thread.
 	# Daemon threads automatically shut down when the main process exits.

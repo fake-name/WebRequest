@@ -8,7 +8,7 @@ setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.31",
+	version="0.0.32",
 
 	# Application author details:
 	author="Connor Wolf",
@@ -30,7 +30,7 @@ setup(
 	long_description_content_type = "text/markdown",
 
 	dependency_links=[
-		'https://github.com/fake-name/ChromeController/tarball/master#egg=ChromeController-0.1.2',
+		'https://github.com/fake-name/ChromeController/tarball/master#egg=ChromeController-0.1.3',
 	],
 
 	# Dependent packages (distributions)
@@ -40,6 +40,6 @@ setup(
 		'PySocks>=1.6.8',
 		'cchardet>=2.1.1',
 		'lxml>=4.1.1',
-		"ChromeController>=0.1.2",
+		"ChromeController>=0.1.3",
 	],
 )

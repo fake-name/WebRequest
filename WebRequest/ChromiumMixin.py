@@ -9,6 +9,7 @@ import threading
 import contextlib
 import multiprocessing
 import gc
+import contextlib
 
 import bs4
 
@@ -25,12 +26,33 @@ def _cr_context(cls):
 class WebGetCrMixin(object):
 	# creds is a list of 3-tuples that gets inserted into the password manager.
 	# it is structured [(top_level_url1, username1, password1), (top_level_url2, username2, password2)]
-	def __init__(self, *args, **kwargs):
+	def __init__(self, use_tab_pool=True, *args, **kwargs):
+		if "chromium-binary" in kwargs:
+			self._cr_binary = kwargs.pop("chrome-binary")
+		else:
+			self._cr_binary = "google-chrome"
+
 		super().__init__(*args, **kwargs)
-		self._cr_binary = "google-chrome"
 
 		self.navigate_timeout_secs = 10
 		self.wrapper_step_through_timeout = 20
+
+		if use_tab_pool:
+			self.chrome_pool = True
+		else:
+			self.chrome_pool = None
+
+
+	def _chrome_context(self, itemUrl):
+		if self.chrome_pool and self.chrome_pool is True:
+			self.log.info("Initializing chromium pool on first use!")
+			self.chrome_pool = ChromeController.TabPooledChromium(binary=self._cr_binary)
+
+		if self.chrome_pool:
+			assert itemUrl is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
+			return self.chrome_pool.tab(url=itemUrl)
+		else:
+			return ChromeController.ChromeContext(binary=self._cr_binary)
 
 	def _syncIntoChromium(self, cr):
 		cr.clear_cookies()
@@ -51,7 +73,7 @@ class WebGetCrMixin(object):
 	def getItemChromium(self, itemUrl):
 		self.log.info("Fetching page for URL: '%s' with Chromium" % itemUrl)
 
-		with ChromeController.ChromeContext(binary=self._cr_binary) as cr:
+		with self._chrome_context(itemUrl) as cr:
 
 			self._syncIntoChromium(cr)
 
@@ -86,7 +108,7 @@ class WebGetCrMixin(object):
 		if not referrer:
 			referrer = url
 
-		with ChromeController.ChromeContext(self._cr_binary) as cr:
+		with self._chrome_context(url) as cr:
 			self._syncIntoChromium(cr)
 
 			cr.blocking_navigate(referrer)
@@ -110,7 +132,7 @@ class WebGetCrMixin(object):
 		if not referrer:
 			referrer = url
 
-		with ChromeController.ChromeContext(self._cr_binary) as cr:
+		with self._chrome_context(url) as cr:
 			self._syncIntoChromium(cr)
 
 
@@ -127,12 +149,11 @@ class WebGetCrMixin(object):
 
 	def chromiumGetRenderedItem(self, url):
 
-		with ChromeController.ChromeContext(self._cr_binary) as cr:
+		with self._chrome_context(url) as cr:
 			self._syncIntoChromium(cr)
 
 			# get_rendered_page_source
 			cr.blocking_navigate(url)
-
 
 			content = cr.get_rendered_page_source()
 			mType = 'text/html'
@@ -185,7 +206,7 @@ class WebGetCrMixin(object):
 
 		current_title = None
 
-		with ChromeController.ChromeContext(self._cr_binary) as cr:
+		with self._chrome_context(url) as cr:
 			self._syncIntoChromium(cr)
 			cr.blocking_navigate(url)
 
@@ -206,7 +227,7 @@ class WebGetCrMixin(object):
 		return False
 
 
-	def chromiumContext(self):
+	def chromiumContext(self, url):
 		'''
 		Return a active chromium context, useable for manual operations directly against
 		chromium.
@@ -215,4 +236,5 @@ class WebGetCrMixin(object):
 		instance at startup, and changes are flushed back to the webrequest instance
 		from chromium at completion.
 		'''
-		return _cr_context(self)
+		assert url is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
+		return self._chrome_context(url)
