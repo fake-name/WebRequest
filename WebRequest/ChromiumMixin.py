@@ -91,6 +91,10 @@ class WebGetCrMixin(object):
 		else:
 			mType = "text/html"
 
+		# Use the new interface that returns the actual type
+		if 'mimetype' in response:
+			mType = response['mimetype']
+
 		# So, self._cr.page_source appears to be the *compressed* page source as-rendered. Because reasons.
 		content = response['content']
 
