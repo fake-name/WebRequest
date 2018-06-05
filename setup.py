@@ -40,6 +40,6 @@ setup(
 		'PySocks>=1.6.8',
 		'cchardet>=2.1.1',
 		'lxml>=4.1.1',
-		"ChromeController>=0.1.3",
+		"ChromeController>=0.2.0",
 	],
 )

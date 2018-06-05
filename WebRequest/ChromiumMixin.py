@@ -22,11 +22,30 @@ def _cr_context(cls):
 		yield cr
 		cls._syncOutOfChromium(cr)
 
+# Share the same chrome instance across multiple threads
+class ChromiumBorg(object):
+	__shared_state = {}
+	# init internal state variables here
+	__initialized = False
+
+	def _init_default_register(self, chrome_binary):
+		# Current runners are configured to use 10 threads.
+		self.__cr = ChromeController.TabPooledChromium(binary=chrome_binary, tab_pool_max_size=10)
+		self.__initialized = True
+
+	def __init__(self, chrome_binary):
+		self.__dict__ = self.__shared_state
+		if not self.__initialized:
+			self._init_default_register(chrome_binary)
+
+	def get(self):
+		return self.__cr
+
 
 class WebGetCrMixin(object):
 	# creds is a list of 3-tuples that gets inserted into the password manager.
 	# it is structured [(top_level_url1, username1, password1), (top_level_url2, username2, password2)]
-	def __init__(self, use_tab_pool=True, *args, **kwargs):
+	def __init__(self, use_global_tab_pool=True, *args, **kwargs):
 		if "chromium-binary" in kwargs:
 			self._cr_binary = kwargs.pop("chrome-binary")
 		else:
@@ -37,20 +56,20 @@ class WebGetCrMixin(object):
 		self.navigate_timeout_secs = 10
 		self.wrapper_step_through_timeout = 20
 
-		if use_tab_pool:
-			self.chrome_pool = True
+		if use_global_tab_pool:
+			self.borg_chrome_pool = True
 		else:
-			self.chrome_pool = None
+			self.borg_chrome_pool = None
 
 
-	def _chrome_context(self, itemUrl):
-		if self.chrome_pool and self.chrome_pool is True:
+	def _chrome_context(self, itemUrl, extra_tid):
+		if self.borg_chrome_pool and self.borg_chrome_pool is True:
 			self.log.info("Initializing chromium pool on first use!")
-			self.chrome_pool = ChromeController.TabPooledChromium(binary=self._cr_binary)
+			self.borg_chrome_pool = ChromiumBorg(chrome_binary=self._cr_binary)
 
-		if self.chrome_pool:
+		if self.borg_chrome_pool:
 			assert itemUrl is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
-			return self.chrome_pool.tab(url=itemUrl)
+			return self.borg_chrome_pool.get().tab(url=itemUrl, extra_id=extra_tid)
 		else:
 			return ChromeController.ChromeContext(binary=self._cr_binary)
 
@@ -70,10 +89,13 @@ class WebGetCrMixin(object):
 		for cookie in cr.get_cookies():
 			self.cj.set_cookie(cookie)
 
-	def getItemChromium(self, itemUrl):
+	def getItemChromium(self, itemUrl, extra_tid=False):
 		self.log.info("Fetching page for URL: '%s' with Chromium" % itemUrl)
 
-		with self._chrome_context(itemUrl) as cr:
+		if extra_tid is True:
+			extra_tid = threading.get_ident()
+
+		with self._chrome_context(itemUrl, extra_tid=extra_tid) as cr:
 
 			self._syncIntoChromium(cr)
 
@@ -107,12 +129,15 @@ class WebGetCrMixin(object):
 
 		return content, fileN, mType
 
-	def getHeadTitleChromium(self, url, referrer=None):
+	def getHeadTitleChromium(self, url, referrer=None, extra_tid=False):
 		self.log.info("Getting HEAD with Chromium")
 		if not referrer:
 			referrer = url
 
-		with self._chrome_context(url) as cr:
+		if extra_tid is True:
+			extra_tid = threading.get_ident()
+
+		with self._chrome_context(url, extra_tid=extra_tid) as cr:
 			self._syncIntoChromium(cr)
 
 			cr.blocking_navigate(referrer)
@@ -131,14 +156,16 @@ class WebGetCrMixin(object):
 		}
 		return ret
 
-	def getHeadChromium(self, url, referrer=None):
+	def getHeadChromium(self, url, referrer=None, extra_tid=None):
 		self.log.info("Getting HEAD with Chromium")
 		if not referrer:
 			referrer = url
 
-		with self._chrome_context(url) as cr:
-			self._syncIntoChromium(cr)
+		if extra_tid is True:
+			extra_tid = threading.get_ident()
 
+		with self._chrome_context(url, extra_tid=extra_tid) as cr:
+			self._syncIntoChromium(cr)
 
 			cr.blocking_navigate(referrer)
 			time.sleep(random.uniform(2, 6))
@@ -151,9 +178,12 @@ class WebGetCrMixin(object):
 		return cur_url
 
 
-	def chromiumGetRenderedItem(self, url):
+	def chromiumGetRenderedItem(self, url, extra_tid=None):
 
-		with self._chrome_context(url) as cr:
+		if extra_tid is True:
+			extra_tid = threading.get_ident()
+
+		with self._chrome_context(url, extra_tid=extra_tid) as cr:
 			self._syncIntoChromium(cr)
 
 			# get_rendered_page_source
@@ -176,7 +206,7 @@ class WebGetCrMixin(object):
 		if hasattr(sup, '__del__'):
 			sup.__del__()
 
-	def stepThroughJsWaf_bare_chromium(self, url, titleContains='', titleNotContains=''):
+	def stepThroughJsWaf_bare_chromium(self, url, titleContains='', titleNotContains='', extra_tid=None):
 		'''
 		Use Chromium to access a resource behind WAF protection.
 
@@ -210,7 +240,10 @@ class WebGetCrMixin(object):
 
 		current_title = None
 
-		with self._chrome_context(url) as cr:
+		if extra_tid is True:
+			extra_tid = threading.get_ident()
+
+		with self._chrome_context(url, extra_tid=extra_tid) as cr:
 			self._syncIntoChromium(cr)
 			cr.blocking_navigate(url)
 
@@ -231,7 +264,7 @@ class WebGetCrMixin(object):
 		return False
 
 
-	def chromiumContext(self, url):
+	def chromiumContext(self, url, extra_tid=None):
 		'''
 		Return a active chromium context, useable for manual operations directly against
 		chromium.
@@ -241,4 +274,9 @@ class WebGetCrMixin(object):
 		from chromium at completion.
 		'''
 		assert url is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
-		return self._chrome_context(url)
+
+
+		if extra_tid is True:
+			extra_tid = threading.get_ident()
+
+		return self._chrome_context(url, extra_tid=extra_tid)
