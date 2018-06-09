@@ -148,6 +148,28 @@ class TestChromiumPooled(unittest.TestCase):
 			self.assertEqual(cur_url, tgturl)
 
 
+	def test_tab_flushing_1(self):
+		tgturl = "http://localhost:{}/".format(self.mock_server_port)
+		page, fname, mtype = self.wg.getItemChromium(tgturl)
+
+		self.assertEqual(fname, '')
+		self.assertEqual(mtype, 'text/html')
+		self.assertEqual(page, 'Root OK?')
+
+		for x in range(20):
+			print("Creating tab again!")
+			with self.wg.chromiumContext(url=tgturl, extra_tid=x) as cr:
+				title, cur_url = cr.get_page_url_title()
+				print("title, cur_url", title, cur_url)
+
+
+		print("3rd tab context!")
+		with self.wg.chromiumContext(url=tgturl) as cr:
+			title, cur_url = cr.get_page_url_title()
+			print("title, cur_url", title, cur_url)
+			self.assertNotEqual(cur_url, tgturl)
+
+
 
 	# def test_fetch_chromium_2(self):
 	# 	page, fname, mtype = self.wg.getItemChromium("http://localhost:{}/raw-txt".format(self.mock_server_port))

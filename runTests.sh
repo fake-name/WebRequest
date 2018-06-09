@@ -21,7 +21,8 @@ nosetests                      \
 	--exe                      \
 	--cover-package=WebRequest \
 	--stop                     \
-	# tests.test_chromium
+
+	# tests.test_chromium.TestChromiumPooled
 	# --nocapture                \
 	# tests.test_waf_bullshit.TestPreemptiveWrapper
 

@@ -1,5 +1,5 @@
 
-ChromeController==0.2.0
+ChromeController==0.3.4
 beautifulsoup4==4.6.0
 selenium==3.8.1
 PySocks==1.6.8
