@@ -1,4 +1,4 @@
 include README.rst
-include LICENSE.rst
+include LICENSE.txt
 include requirements.txt
 exclude tests/*
