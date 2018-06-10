@@ -1,18 +1,20 @@
 
 import setuptools
-from distutils.core import setup
 import sys
 import time
 
-install_requires = open("requirements.txt").readlines()
-install_requires = [tmp.strip() for tmp in install_requires]
+def req_file(filename):
+	with open(filename) as f:
+		content = f.readlines()
+	# you may also want to remove whitespace characters like `\n` at the end of each line
+	return [x.strip() for x in content]
 
-setup(
+setuptools.setup(
 	# Application name:
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.35",
+	version="0.0.36",
 
 	# Application author details:
 	author="Connor Wolf",
@@ -33,6 +35,8 @@ setup(
 	long_description              = open("README.md").read(),
 	long_description_content_type = "text/markdown",
 
+	include_package_data=True,
+
 	# Dependent packages (distributions)
-	install_requires=install_requires,
+	install_requires=req_file("requirements.txt"),
 )
