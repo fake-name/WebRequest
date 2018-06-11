@@ -14,7 +14,7 @@ setuptools.setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.36",
+	version="0.0.38",
 
 	# Application author details:
 	author="Connor Wolf",
@@ -23,7 +23,6 @@ setuptools.setup(
 	# Packages
 	packages=setuptools.find_packages(),
 	package_dir = {'WebRequest': 'WebRequest'},
-
 
 	# Details
 	url="https://github.com/fake-name/WebRequest",

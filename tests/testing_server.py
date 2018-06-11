@@ -22,6 +22,12 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 	# print("Capturing expected headers:")
 	# print(expected_headers)
 
+	assert isinstance(expected_headers, dict), "expected_headers must be a dict. Passed a %s" & type(expected_headers)
+
+	for key, val in expected_headers.items():
+		assert isinstance(key, str)
+		assert isinstance(val, str)
+
 	cookie_key = uuid.uuid4().hex
 	log = logging.getLogger("Main.TestServer")
 
@@ -37,7 +43,7 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 			return
 
 		def validate_headers(self):
-			for key, value in expected_headers:
+			for key, value in expected_headers.items():
 				if (is_annoying_pjs or is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept-Encoding':
 					# So PhantomJS monkeys with accept-encoding headers
 					# Just ignore that particular header, I guess.
@@ -555,10 +561,17 @@ def start_server(assertion_class,
 	else:
 		mock_server_port = get_free_port()
 
-	captured_server = capture_expected_headers(from_wg.browserHeaders, assertion_class,
+	expected_headers = dict(from_wg.browserHeaders)
+	print(from_wg)
+	print(expected_headers)
+	assert isinstance(expected_headers, dict)
+
+	captured_server = capture_expected_headers(
+			expected_headers             = expected_headers,
+			test_context                 = assertion_class,
 			is_chromium                  = is_chromium,
-		is_selenium_garbage_chromium=is_selenium_garbage_chromium,
-		is_annoying_pjs=is_annoying_pjs,
+			is_selenium_garbage_chromium = is_selenium_garbage_chromium,
+			is_annoying_pjs              = is_annoying_pjs,
 			skip_header_checks           = skip_header_checks
 		)
 	retries = 4
@@ -585,7 +598,10 @@ def start_server(assertion_class,
 if __name__ == '__main__':
 
 	wg = WebRequest.WebGetRobust()
-	srv = start_server(None, wg, skip_header_checks=True)
+	srv = start_server(
+		assertion_class    = None,
+		from_wg            = wg,
+		skip_header_checks = True)
 
 	print("running server on port: ", srv)
 	while 1:
