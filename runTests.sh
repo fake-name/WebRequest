@@ -16,12 +16,43 @@
 
 set -e
 
+# nosetests                      \
+# 	--with-coverage            \
+# 	--exe                      \
+# 	--cover-package=WebRequest \
+# 	tests.test_chromium
+
+# nosetests                      \
+# 	--with-coverage            \
+# 	--exe                      \
+# 	--cover-package=WebRequest \
+# 	tests.testing_server
+
+# nosetests                      \
+# 	--with-coverage            \
+# 	--exe                      \
+# 	--cover-package=WebRequest \
+# 	tests.test_selenium
+
+# nosetests                      \
+# 	--with-coverage            \
+# 	--exe                      \
+# 	--cover-package=WebRequest \
+# 	tests.test_simple
+
+# nosetests                      \
+# 	--with-coverage            \
+# 	--exe                      \
+# 	--cover-package=WebRequest \
+# 	tests.test_waf_bullshit
+
 nosetests                      \
 	--with-coverage            \
 	--exe                      \
 	--cover-package=WebRequest \
-	--stop                     \
+	tests
 
+	# --stop                     \
 	# tests.test_chromium.TestChromiumPooled
 	# --nocapture                \
 	# tests.test_waf_bullshit.TestPreemptiveWrapper
@@ -34,4 +65,9 @@ nosetests                      \
 coverage report --show-missing
 
 coverage erase
+
+
+
+
+
 
