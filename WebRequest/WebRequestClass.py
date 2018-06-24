@@ -594,7 +594,7 @@ class WebGetRobust(
 	######################################################################################################################################################
 	######################################################################################################################################################
 
-	def __decodeHtml(self, pageContent, cType):
+	def __decode_text_content(self, pageContent, cType):
 
 		# this *should* probably be done using a parser.
 		# However, it seems to be grossly overkill to shove the whole page (which can be quite large) through a parser just to pull out a tag that
@@ -631,7 +631,7 @@ class WebGetRobust(
 
 		if not charset:
 			self.log.warning("Could not find encoding information on page - Using default charset. Shit may break!")
-			charset = "iso-8859-1"
+			charset = "utf-8"
 
 		try:
 			pageContent = str(pageContent, charset)
@@ -761,20 +761,14 @@ class WebGetRobust(
 				# Use content-aware mechanisms for determing the content encoding.
 
 
-				if "text/html" in cType or \
-					'text/javascript' in cType or    \
-					'text/css' in cType or    \
-					'application/xml' in cType or    \
-					'application/atom+xml' in cType:				# If this is a html/text page, we want to decode it using the local encoding
-
-					pgctnt = self.__decodeHtml(pgctnt, cType)
-
-				elif "text/plain" in cType or "text/xml" in cType:
-					pgctnt = bs4.UnicodeDammit(pgctnt).unicode_markup
-
-				# Assume JSON is utf-8. Probably a bad idea?
-				elif "application/json" in cType:
-					pgctnt = pgctnt.decode('utf-8')
+				if "text/html" in cType or             \
+					'text/javascript' in cType or      \
+					'text/css' in cType or             \
+					'application/json' in cType or     \
+					'application/xml' in cType or      \
+					'application/atom+xml' in cType or \
+					cType.startswith("text/"):				# If this is a html/text page, we want to decode it using the local encoding
+					pgctnt = self.__decode_text_content(pgctnt, cType)
 
 				elif "text" in cType:
 					self.log.critical("Unknown content type!")
