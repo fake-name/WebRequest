@@ -31,6 +31,15 @@ try:
 except ImportError:
 	HAVE_SOCKS = False
 
+
+cchardet = False
+
+try:
+	import cchardet
+except ImportError:    # pragma: no cover
+	pass
+
+
 from . import HeaderParseMonkeyPatch
 
 from . import ChromiumMixin
@@ -611,6 +620,14 @@ class WebGetRobust(
 
 				dummy_docType, charset = cType.split(b";")
 				charset = charset.split(b"=")[-1]
+
+		if cchardet:
+			inferred = cchardet.detect(pageContent)
+			if inferred and inferred['confidence'] > 0.8:
+				charset = inferred['encoding']
+
+		else:
+			self.log.warning("Missing cchardet!")
 
 		if not charset:
 			self.log.warning("Could not find encoding information on page - Using default charset. Shit may break!")
