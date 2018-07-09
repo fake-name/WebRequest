@@ -165,6 +165,11 @@ def getUserAgent():
 
 
 
+if __name__ == '__main__':
+	import pprint
+	ua = getUserAgent()
+	pprint.pprint(ua)
+
 
 # This file based heavily on the UA List, Copyright (c) 2014, Harald Hope
 # This list was released under the BSD 2 clause.

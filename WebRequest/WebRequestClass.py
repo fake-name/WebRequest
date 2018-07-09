@@ -77,7 +77,7 @@ class WebGetRobust(
 	cookielib = None
 	opener = None
 
-	errorOutCount = 2
+	errorOutCount = 1
 	# retryDelay = 0.1
 	retryDelay = 0.01
 
