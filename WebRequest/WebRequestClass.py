@@ -623,7 +623,12 @@ class WebGetRobust(
 
 		if cchardet:
 			inferred = cchardet.detect(pageContent)
-			if inferred and inferred['confidence'] is not None and inferred['confidence'] > 0.8:
+			if inferred and inferred['confidence'] is None:
+				# If we couldn't infer a charset, just short circuit and return the content.
+				# It's probably binary.
+				return pageContent
+
+			elif inferred and inferred['confidence'] is not None and inferred['confidence'] > 0.8:
 				charset = inferred['encoding']
 				self.log.info("Cchardet inferred encoding: %s")
 
