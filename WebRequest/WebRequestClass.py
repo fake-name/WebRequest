@@ -623,7 +623,7 @@ class WebGetRobust(
 
 		if cchardet:
 			inferred = cchardet.detect(pageContent)
-			if inferred and inferred['confidence'] > 0.8:
+			if inferred and inferred['confidence'] is not None and inferred['confidence'] > 0.8:
 				charset = inferred['encoding']
 				self.log.info("Cchardet inferred encoding: %s")
 
