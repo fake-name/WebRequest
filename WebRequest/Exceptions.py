@@ -43,3 +43,12 @@ class CloudFlareWrapper(GarbageSiteWrapper):
 class SucuriWrapper(GarbageSiteWrapper):
 	pass
 
+
+class CaptchaSolverFailure(WebGetException):
+	pass
+
+class CouldNotDetermineLocalIp(CaptchaSolverFailure):
+	pass
+
+class CouldNotFindUpnpGateway(CaptchaSolverFailure):
+	pass
