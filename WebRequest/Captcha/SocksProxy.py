@@ -15,7 +15,7 @@ import pproxy.verbose
 
 
 from . import PunchPort
-import WebRequest.Exceptions as exc
+from .. import Exceptions as exc
 
 
 class ProxyLauncher(object):

@@ -11,10 +11,11 @@ import time
 
 import requests
 
-import WebRequest.Exceptions as exc
+from .. import Exceptions as exc
 
 from . import SocksProxy
 
+# This is hardcoded. Huh.
 TWOCAPTCHA_IP = '138.201.188.166'
 
 class TwoCaptchaSolver(object):
