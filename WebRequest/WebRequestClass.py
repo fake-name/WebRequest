@@ -630,7 +630,7 @@ class WebGetRobust(
 
 			elif inferred and inferred['confidence'] is not None and inferred['confidence'] > 0.8:
 				charset = inferred['encoding']
-				self.log.info("Cchardet inferred encoding: %s")
+				self.log.info("Cchardet inferred encoding: %s", charset)
 
 		else:
 			self.log.warning("Missing cchardet!")

@@ -2,7 +2,15 @@
 ChromeController>=0.3.5
 beautifulsoup4>=4.6.0
 selenium>=3.8.1
-PySocks>=1.6.8
 cchardet>=2.1.1
 lxml>=4.1.1
+
+# Sadface. So we need a socks client library, and a socks host 
+# library, and they're different.
+PySocks>=1.6.8
+
 upnpclient
+
+# Socks server (and crypto accelerator)
+pproxy 
+pycryptodome

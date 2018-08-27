@@ -73,11 +73,13 @@ class UpnpHolePunch(object):
 
 	def _init_upnp(self):
 		devices = upnpclient.discover()
+		self.log.info("Found %s UPnP devices on LAN", len(devices))
 
 		for device in devices:
 			try:
 				_ = device.WANIPConn1
 				self.gateway_device = device
+				self.log.info("Found gateway device: %s", device)
 			except Exception:
 				pass
 
@@ -85,8 +87,7 @@ class UpnpHolePunch(object):
 			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found. Found %s UPnP devices on LAN" % len(devices))
 
 
-		print("devices:", devices)
-		print("gateway:", self.gateway_device)
+		self.log.info("Resolved WAN address: %s", self.get_wan_ip())
 
 	def _get_local_ip(self):
 		local_ip = None
@@ -104,14 +105,18 @@ class UpnpHolePunch(object):
 
 		return local_ip
 
-	def find_gateway(self):
-		self.log.info("Attempting to open port through NAT using UPnP")
-
+	def get_wan_ip(self):
+		ret = self.gateway_device.WANIPConn1.GetExternalIPAddress()
+		if not "NewExternalIPAddress" in ret:
+			raise exc.CouldNotDetermineWanIp("No wan IP address found on gateway. What?")
+		return ret["NewExternalIPAddress"]
 
 	def open_port(self, remote_address, remote_port, local_port):
 		# Idiot check
 		if not self.gateway_device:
 			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found.")
+
+		duration = 60 * 10
 
 		self.gateway_device.WANIPConn1.AddPortMapping(
 					NewRemoteHost             = remote_address,
@@ -121,14 +126,16 @@ class UpnpHolePunch(object):
 					NewInternalClient         = self.local_ip,
 					NewEnabled                = '1',
 					NewPortMappingDescription = 'CaptchaSolver Hole Punching.',
-					NewLeaseDuration          = 60 * 10
+					NewLeaseDuration          = duration
 					)
-
+		self.log.info("Forwarding from remote %s:%s to local %s:%s. Lease will expire in %s seconds.",
+			remote_address, remote_port, self.local_ip, local_port, duration)
 
 def test():
 	logging.basicConfig(level=logging.INFO)
 	puncher = UpnpHolePunch()
 	print("Puncher:", puncher)
+	print("Wan IP:", puncher.get_wan_ip())
 
 if __name__ == '__main__':
 	test()

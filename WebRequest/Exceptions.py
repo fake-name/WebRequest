@@ -3,11 +3,12 @@
 
 class WebGetException(Exception):
 	def __init__(self, message, url):
-		super().__init__(self, message)
+		super().__init__(message)
 		self.url         = url
+		self.message     = message
 
 	def __repr__(self):
-		return '<WebGetException for url %s>' % (self.url, )
+		return '<WebGetException %s for url %s>' % (self.message, self.url, )
 
 class ContentTypeError(WebGetException):
 	pass
@@ -45,10 +46,14 @@ class SucuriWrapper(GarbageSiteWrapper):
 
 
 class CaptchaSolverFailure(WebGetException):
-	pass
+	def __init__(self, message):
+		super().__init__(message, "No Url")
 
 class CouldNotDetermineLocalIp(CaptchaSolverFailure):
 	pass
-
+class CouldNotDetermineWanIp(CaptchaSolverFailure):
+	pass
 class CouldNotFindUpnpGateway(CaptchaSolverFailure):
+	pass
+class CaptchaNotReady(CaptchaSolverFailure):
 	pass
