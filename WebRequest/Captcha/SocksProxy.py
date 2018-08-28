@@ -27,7 +27,9 @@ class ProxyLauncher(object):
 		# We avoid the absolute extents as a precaution
 		self.listen_port = random.randint(5000, 60000)
 
-		self._open_local_port(self.listen_port, remote_ip)
+		self.remote_ip = remote_ip
+
+		self._open_local_port(self.listen_port, self.remote_ip)
 
 		self.proxy_process = threading.Thread(target=self._launch_proxy, args=(self.listen_port, ))
 		self.proxy_process.start()
@@ -82,11 +84,19 @@ class ProxyLauncher(object):
 		self.hole_puncher.open_port(listen_from_ip, port, port)
 
 
+	def _close_local_port(self, port, listen_from_ip):
+		self.log.info("Closing port on NAT device to forward port %s from remote IP %s.", port, listen_from_ip)
+		self.hole_puncher.close_port(listen_from_ip, port)
+
+
 	def stop(self):
 		self.log.info("Telling async event-loop to exit")
 		self.loop.call_soon_threadsafe(self.loop.stop)
 		self.log.info("Joining asyncio loop thread.")
 		self.proxy_process.join()
+
+		# Close the port
+		self._close_local_port(self.listen_port, self.remote_ip)
 
 	def get_wan_address(self):
 		return "{}:{}".format(self.hole_puncher.get_wan_ip(), self.listen_port)

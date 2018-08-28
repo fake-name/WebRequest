@@ -111,12 +111,13 @@ class UpnpHolePunch(object):
 			raise exc.CouldNotDetermineWanIp("No wan IP address found on gateway. What?")
 		return ret["NewExternalIPAddress"]
 
-	def open_port(self, remote_address, remote_port, local_port):
+	def open_port(self, remote_address, remote_port, local_port, duration=None):
 		# Idiot check
 		if not self.gateway_device:
 			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found.")
 
-		duration = 60 * 10
+		if duration is None:
+			duration = 60 * 15
 
 		self.gateway_device.WANIPConn1.AddPortMapping(
 					NewRemoteHost             = remote_address,
@@ -125,11 +126,28 @@ class UpnpHolePunch(object):
 					NewInternalPort           = local_port,
 					NewInternalClient         = self.local_ip,
 					NewEnabled                = '1',
-					NewPortMappingDescription = 'CaptchaSolver Hole Punching.',
+					NewPortMappingDescription = 'WebRequest CaptchaSolver Hole Punching.',
 					NewLeaseDuration          = duration
 					)
 		self.log.info("Forwarding from remote %s:%s to local %s:%s. Lease will expire in %s seconds.",
 			remote_address, remote_port, self.local_ip, local_port, duration)
+
+
+
+	def close_port(self, remote_address, remote_port):
+		# Idiot check
+		if not self.gateway_device:
+			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found.")
+
+		self.log.info("Closing forwarded port from remote %s:%s.",
+			remote_address, remote_port)
+
+		self.gateway_device.WANIPConn1.DeletePortMapping(
+						NewRemoteHost             = remote_address,
+						NewExternalPort           = remote_port,
+						NewProtocol               = 'TCP',
+					)
+
 
 def test():
 	logging.basicConfig(level=logging.INFO)

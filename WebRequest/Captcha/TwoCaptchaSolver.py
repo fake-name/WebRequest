@@ -24,7 +24,9 @@ class TwoCaptchaSolver(object):
 
 		self.api_key  = api_key
 		self.wg       = wg
-		self.waittime = 120
+
+		# Default timeout is 5 minutes.
+		self.waittime = 60 * 5
 
 	def getUrlFor(self, mode, query_dict):
 
@@ -143,15 +145,23 @@ class TwoCaptchaSolver(object):
 
 		Polling is done every 8 seconds.
 		"""
-		wait_time = timeout
+		timeout = timeout
 
-		if not wait_time:
-			wait_time = self.waittime
+		if not timeout:
+			timeout = self.waittime
 
 		poll_interval = 8
 
-		for _ in range(int(wait_time / poll_interval)+1):
-			self.log.info("Sleeping %s seconds." % (poll_interval))
+		start = time.time()
+
+		for x in range(int(timeout / poll_interval)+1):
+			self.log.info("Sleeping %s seconds (poll %s of %s, elapsed %0.2fs of %0.2f).",
+					poll_interval,
+					x,
+					int(timeout / poll_interval)+1,
+					(time.time() - start),
+					timeout,
+				)
 			time.sleep(poll_interval)
 
 			try:
@@ -169,7 +179,7 @@ class TwoCaptchaSolver(object):
 			except exc.CaptchaNotReady:
 				self.log.info("Captcha not ready. Waiting longer.")
 
-		raise exc.CaptchaSolverFailure("Solving captcha timed out!")
+		raise exc.CaptchaSolverFailure("Solving captcha timed out after %s seconds!" % (time.time() - start, ))
 
 	def _submit(self, pathfile, filedata, filename):
 		'''
@@ -196,9 +206,11 @@ class TwoCaptchaSolver(object):
 
 		request = requests.post(url, files=files, data=payload)
 
-		if request.ok:
-			resp_json = json.loads(request.text)
-			return self._process_response(resp_json)
+		if not request.ok:
+			raise exc.CaptchaSolverFailure("Posting captcha to solve failed!")
+
+		resp_json = json.loads(request.text)
+		return self._process_response(resp_json)
 
 
 	def solve_simple_captcha(self, pathfile=None, filedata=None, filename=None):
@@ -216,7 +228,14 @@ class TwoCaptchaSolver(object):
 		captcha_id = self._submit(pathfile, filedata, filename)
 		return self._getresult(captcha_id=captcha_id)
 
-	def solve_recaptcha(self, google_key, page_url):
+	def solve_recaptcha(self, google_key, page_url, timeout = 15 * 60):
+		'''
+		Solve a recaptcha on page `page_url` with the input value `google_key`.
+		Timeout is `timeout` seconds, defaulting to 60 seconds.
+
+		Return value is either the `g-recaptcha-response` value, or an exceptionj is raised
+		(generally `CaptchaSolverFailure`)
+		'''
 
 		proxy = SocksProxy.ProxyLauncher(TWOCAPTCHA_IP)
 
@@ -234,9 +253,9 @@ class TwoCaptchaSolver(object):
 					}
 				)
 
-			# Allow 10 minutes for the solution
+			# Allow 15 minutes for the solution
 			# I've been seeing times up to 160+ seconds in testing.
-			return self._getresult(captcha_id=captcha_id, timeout=6 * 10)
+			return self._getresult(captcha_id=captcha_id, timeout=timeout)
 		finally:
 			proxy.stop()
 
@@ -273,7 +292,7 @@ def test():
 
 	wg = WebRequest.WebGetRobust()
 
-	solver = TwoCaptchaSolver(key=test_settings.TWOCAPTCHA_API_KEY, wg=wg)
+	solver = TwoCaptchaSolver(api_key=test_settings.TWOCAPTCHA_API_KEY, wg=wg)
 
 	print(solver)
 
@@ -281,7 +300,7 @@ def test():
 
 	# res = solver.solve_simple_captcha(pathfile='/media/Storage/Scripts/xaDownloader/img.jpg')
 
-	print(res)
+	# print(res)
 
 
 
