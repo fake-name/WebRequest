@@ -84,7 +84,6 @@ class ProxyLauncher(object):
 
 	def stop(self):
 		self.log.info("Telling async event-loop to exit")
-		asyncio.get_event_loop().stop()
 		self.loop.call_soon_threadsafe(self.loop.stop)
 		self.log.info("Joining asyncio loop thread.")
 		self.proxy_process.join()
