@@ -35,6 +35,13 @@ class FetchFailureError(WebGetException):
 				"{%s}" % self.err_content
 			)
 
+class RedirectedError(WebGetException):
+	pass
+
+class ArgumentError(WebGetException):
+	pass
+
+
 # Specialized exceptions for garbage site
 # "protection" bullshit
 class GarbageSiteWrapper(WebGetException):

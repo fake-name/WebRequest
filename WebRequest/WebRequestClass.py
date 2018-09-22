@@ -249,6 +249,35 @@ class WebGetRobust(
 					# 	tmp_err_fp.write(page)
 					raise
 
+
+
+	def getSoupNoRedirects(self, *args, **kwargs):
+		if 'returnMultiple' in kwargs:
+			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple'")
+
+		if 'soup' in kwargs and kwargs['soup']:
+			raise Exceptions.ArgumentError("getSoup contradicts the 'soup' directive!")
+
+		kwargs['returnMultiple'] = True
+
+		tgt_url = kwargs.get('requestedUrl', None)
+		if not tgt_url:
+			tgt_url = args[0]
+
+
+		page, handle = self.getpage(*args, **kwargs)
+
+		redirurl = handle.geturl()
+		if redirurl != tgt_url:
+			self.log.error("Requested %s, redirected to %s. Raising error", tgt_url, redirurl)
+
+			raise Exceptions.RedirectedError("Requested %s, redirected to %s" % (
+				tgt_url, redirurl))
+
+		soup = as_soup(page)
+		return soup
+
+
 	def getFileAndName(self, *args, **kwargs):
 		'''
 		Give a requested page (note: the arguments for this call are forwarded to getpage()),
