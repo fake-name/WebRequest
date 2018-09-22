@@ -38,9 +38,6 @@ class FetchFailureError(WebGetException):
 class RedirectedError(WebGetException):
 	pass
 
-class ArgumentError(WebGetException):
-	pass
-
 
 # Specialized exceptions for garbage site
 # "protection" bullshit
