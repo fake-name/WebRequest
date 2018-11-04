@@ -129,10 +129,11 @@ class WebGetCrMixin(object):
 
 		return content, fileN, mType
 
-	def getHeadTitleChromium(self, url, referrer=None, extra_tid=False):
+	def getHeadTitleChromium(self, url, referrer=None, extra_tid=False, title_timeout=None):
+		'''
+
+		'''
 		self.log.info("Getting HEAD with Chromium")
-		if not referrer:
-			referrer = url
 
 		if extra_tid is True:
 			extra_tid = threading.get_ident()
@@ -140,11 +141,25 @@ class WebGetCrMixin(object):
 		with self._chrome_context(url, extra_tid=extra_tid) as cr:
 			self._syncIntoChromium(cr)
 
-			cr.blocking_navigate(referrer)
-			time.sleep(random.uniform(2, 6))
+			if referrer:
+				cr.blocking_navigate(referrer)
+				time.sleep(random.uniform(2, 6))
 			cr.blocking_navigate(url)
 
+
 			title, cur_url = cr.get_page_url_title()
+
+			if title_timeout:
+				for _ in range(title_timeout):
+					# Wait until the page sets a title. This generally indicates that
+					# the page is fully rendered, which for some reason seems to not
+					# always be true after blocking_navigate, despite the fact that
+					# that call shouldn't return until DOMContentLoaded has fired
+					if cur_url not in title:
+						break
+					time.sleep(1)
+
+					title, cur_url = cr.get_page_url_title()
 
 			self._syncOutOfChromium(cr)
 
@@ -178,7 +193,7 @@ class WebGetCrMixin(object):
 		return cur_url
 
 
-	def chromiumGetRenderedItem(self, url, extra_tid=None):
+	def chromiumGetRenderedItem(self, url, extra_tid=None, title_timeout=None):
 
 		if extra_tid is True:
 			extra_tid = threading.get_ident()
@@ -188,6 +203,19 @@ class WebGetCrMixin(object):
 
 			# get_rendered_page_source
 			cr.blocking_navigate(url)
+
+
+			title, cur_url = cr.get_page_url_title()
+			if title_timeout:
+				for _ in range(title_timeout):
+					# Wait until the page sets a title. This generally indicates that
+					# the page is fully rendered, which for some reason seems to not
+					# always be true after blocking_navigate, despite the fact that
+					# that call shouldn't return until DOMContentLoaded has fired
+					if cur_url not in title:
+						break
+					time.sleep(1)
+					title, cur_url = cr.get_page_url_title()
 
 			content = cr.get_rendered_page_source()
 			mType = 'text/html'
