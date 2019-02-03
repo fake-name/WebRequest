@@ -8,10 +8,19 @@ def as_soup(in_str):
 	# content with a charset specified as iso-8859-1.
 	# See https://bugs.launchpad.net/beautifulsoup/+bug/972466 and
 	# https://bugs.launchpad.net/lxml/+bug/963936
-	if 'charset=iso-8859-1' in in_str:
-		in_str = in_str.replace("charset=iso-8859-1", "charset=UTF-8")
-	if 'charset=ISO-8859-1' in in_str:
-		in_str = in_str.replace("charset=ISO-8859-1", "charset=UTF-8")
+
+	if isinstance(in_str, bytes):
+		if b'charset=iso-8859-1' in in_str:
+			in_str = in_str.replace(b"charset=iso-8859-1", b"charset=UTF-8")
+		if b'charset=ISO-8859-1' in in_str:
+			in_str = in_str.replace(b"charset=ISO-8859-1", b"charset=UTF-8")
+	elif isinstance(in_str, str):
+		if 'charset=iso-8859-1' in in_str:
+			in_str = in_str.replace("charset=iso-8859-1", "charset=UTF-8")
+		if 'charset=ISO-8859-1' in in_str:
+			in_str = in_str.replace("charset=ISO-8859-1", "charset=UTF-8")
+	else:
+		raise Exceptions.ContentTypeError("as_soup call can only accept either bytes or string. Passed type %s" % type(in_str), None)
 
 	return bs4.BeautifulSoup(in_str, "lxml")
 

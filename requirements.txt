@@ -10,6 +10,7 @@ lxml>=4.1.1
 PySocks>=1.6.8
 
 upnpclient
+python_anticaptcha 
 
 # Socks server (and crypto accelerator)
 pproxy 

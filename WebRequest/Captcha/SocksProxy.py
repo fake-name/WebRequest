@@ -20,16 +20,16 @@ from .. import Exceptions as exc
 
 class ProxyLauncher(object):
 
-	def __init__(self, remote_ip):
+	def __init__(self, remote_ips):
 		self.log = logging.getLogger("Main.WebRequest.Captcha.ProxyLauncher")
 
 		# Chose a random local port between 5000 and 60000
 		# We avoid the absolute extents as a precaution
 		self.listen_port = random.randint(5000, 60000)
 
-		self.remote_ip = remote_ip
+		self.remote_ips = remote_ips
 
-		self._open_local_port(self.listen_port, self.remote_ip)
+		self._open_local_port(self.listen_port, self.remote_ips)
 
 		self.proxy_process = threading.Thread(target=self._launch_proxy, args=(self.listen_port, ))
 		self.proxy_process.start()
@@ -78,15 +78,15 @@ class ProxyLauncher(object):
 			self.loop.run_until_complete(server.wait_closed())
 		self.loop.close()
 
-	def _open_local_port(self, port, listen_from_ip):
-		self.log.info("Opening port on NAT device to forward port %s from remote IP %s.", port, listen_from_ip)
+	def _open_local_port(self, port, listen_from_ips):
+		self.log.info("Opening port on NAT device to forward port %s from remote IP %s.", port, listen_from_ips)
 		self.hole_puncher = PunchPort.UpnpHolePunch()
-		self.hole_puncher.open_port(listen_from_ip, port, port)
+		self.hole_puncher.open_port(listen_from_ips, port, port)
 
 
-	def _close_local_port(self, port, listen_from_ip):
-		self.log.info("Closing port on NAT device to forward port %s from remote IP %s.", port, listen_from_ip)
-		self.hole_puncher.close_port(listen_from_ip, port)
+	def _close_local_port(self, port, listen_from_ips):
+		self.log.info("Closing port on NAT device to forward port %s from remote IP %s.", port, listen_from_ips)
+		self.hole_puncher.close_port(listen_from_ips, port)
 
 
 	def stop(self):
@@ -96,10 +96,15 @@ class ProxyLauncher(object):
 		self.proxy_process.join()
 
 		# Close the port
-		self._close_local_port(self.listen_port, self.remote_ip)
+		self._close_local_port(self.listen_port, self.remote_ips)
 
 	def get_wan_address(self):
 		return "{}:{}".format(self.hole_puncher.get_wan_ip(), self.listen_port)
+
+	def get_wan_ip(self):
+		return "{}".format(self.hole_puncher.get_wan_ip())
+	def get_wan_port(self):
+		return "{}".format(self.listen_port)
 
 
 def test():

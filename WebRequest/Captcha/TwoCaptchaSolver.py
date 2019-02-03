@@ -237,7 +237,7 @@ class TwoCaptchaSolver(object):
 		(generally `CaptchaSolverFailure`)
 		'''
 
-		proxy = SocksProxy.ProxyLauncher(TWOCAPTCHA_IP)
+		proxy = SocksProxy.ProxyLauncher([TWOCAPTCHA_IP])
 
 		try:
 			captcha_id = self.doGet('input', {
