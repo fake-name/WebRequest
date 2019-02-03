@@ -119,7 +119,16 @@ class UpnpHolePunch(object):
 		if duration is None:
 			duration = 60 * 15
 
+		# So upnp doesn't actually filter by remote address (except for which interface
+		# to bind to, I think). Therefore, if we pass it multiple addresses on the same
+		# interface, you get rule conflicts.
+		# A horrible hack to fix this is to just add the first mapping, which will
+		# work in any context where there is only one WAN interface.
+		remote_addresses = [remote_addresses[0]]
+
 		for remote_address in remote_addresses:
+			self.log.info("Forwarding from remote %s:%s to local %s:%s. Lease will expire in %s seconds.",
+				remote_address, remote_port, self.local_ip, local_port, duration)
 			self.gateway_device.WANIPConn1.AddPortMapping(
 						NewRemoteHost             = remote_address,
 						NewExternalPort           = remote_port,
@@ -127,11 +136,9 @@ class UpnpHolePunch(object):
 						NewInternalPort           = local_port,
 						NewInternalClient         = self.local_ip,
 						NewEnabled                = '1',
-						NewPortMappingDescription = 'WebRequest CaptchaSolver Hole Punching.',
+						NewPortMappingDescription = 'WebRequest CaptchaSolver Hole Punching {}.'.format(local_port),
 						NewLeaseDuration          = duration
 						)
-			self.log.info("Forwarding from remote %s:%s to local %s:%s. Lease will expire in %s seconds.",
-				remote_address, remote_port, self.local_ip, local_port, duration)
 
 
 
@@ -140,10 +147,16 @@ class UpnpHolePunch(object):
 		if not self.gateway_device:
 			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found.")
 
-		self.log.info("Closing forwarded port from remote %s:%s.",
-			remote_addresses, remote_port)
+		# So upnp doesn't actually filter by remote address (except for which interface
+		# to bind to, I think). Therefore, if we pass it multiple addresses on the same
+		# interface, you get rule conflicts.
+		# A horrible hack to fix this is to just add the first mapping, which will
+		# work in any context where there is only one WAN interface.
+		remote_addresses = [remote_addresses[0]]
 
 		for remote_address in remote_addresses:
+			self.log.info("Closing forwarded port from remote %s:%s.",
+				remote_address, remote_port)
 			self.gateway_device.WANIPConn1.DeletePortMapping(
 							NewRemoteHost             = remote_address,
 							NewExternalPort           = remote_port,

@@ -62,13 +62,21 @@ class AntiCaptchaSolver(object):
 		else:
 			raise ValueError("You must pass either a valid file path, or a bytes array containing the captcha image!")
 
-		task = python_anticaptcha.ImageToTextTask(fp)
-		job = self.client.createTask(task)
+		try:
+			task = python_anticaptcha.ImageToTextTask(fp)
+			job = self.client.createTask(task)
 
+			job.join(maximum_time = self.waittime)
 
-		job.join(maximum_time = self.waittime)
+			return job.get_captcha_text()
 
-		return job.get_captcha_text()
+		except python_anticaptcha.AnticaptchaException as e:
+			raise exc.CaptchaSolverFailure("Failure solving captcha: %s, %s, %s" % (
+					e.error_id,
+					e.error_code,
+					e.error_description,
+				))
+
 
 	def solve_recaptcha(self, google_key, page_url, timeout = 15 * 60):
 		'''
@@ -81,24 +89,32 @@ class AntiCaptchaSolver(object):
 
 		proxy = SocksProxy.ProxyLauncher(ANTICAPTCHA_IPS)
 
-		antiprox = python_anticaptcha.ProxyLauncher(
-				proxy_type     = "socks5",
-				proxy_address  = proxy.get_wan_ip(),
-				proxy_port     = proxy.get_wan_port(),
-				proxy_login    = None,
-				proxy_password = None,
-			)
-
 		try:
+			antiprox = python_anticaptcha.Proxy(
+					proxy_type     = "socks5",
+					proxy_address  = proxy.get_wan_ip(),
+					proxy_port     = proxy.get_wan_port(),
+					proxy_login    = None,
+					proxy_password = None,
+				)
+
 			task = python_anticaptcha.NoCaptchaTask(
 					website_url = page_url,
 					website_key = google_key,
-					proxy=antiprox
+					proxy       = antiprox,
+					user_agent  = dict(self.wg.browserHeaders).get('User-Agent')
 				)
 			job = self.client.createTask(task)
 			job.join(maximum_time = timeout)
 
 			return job.get_solution_response()
+		except python_anticaptcha.AnticaptchaException as e:
+			raise exc.CaptchaSolverFailure("Failure solving captcha: %s, %s, %s" % (
+					e.error_id,
+					e.error_code,
+					e.error_description,
+				))
+
 		finally:
 			proxy.stop()
 
@@ -151,4 +167,5 @@ def test():
 if __name__ == '__main__':
 	recaptcha_test()
 	# test()
+
 
