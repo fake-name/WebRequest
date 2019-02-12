@@ -17,5 +17,6 @@ from .Exceptions import CouldNotDetermineWanIp
 from .Exceptions import CouldNotFindUpnpGateway
 from .Exceptions import CaptchaNotReady
 
+from .Captcha.AntiCaptchaSolver import AntiCaptchaSolver
 from .Captcha.TwoCaptchaSolver import TwoCaptchaSolver
 from .Exceptions import CaptchaSolverFailure

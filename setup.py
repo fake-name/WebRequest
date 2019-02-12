@@ -14,7 +14,7 @@ setuptools.setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.53",
+	version="0.0.54",
 
 	# Application author details:
 	author="Connor Wolf",
