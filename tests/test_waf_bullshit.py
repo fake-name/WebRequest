@@ -62,14 +62,6 @@ class TestWafPokeThrough(unittest.TestCase):
 		self.assertEqual(page, '<html><head><title>At target Sucuri page!</title></head><body>Sucuri Redirected OK?</body></html>')
 
 
-	def test_cloudflare_selenium_pjs(self):
-		stepped_through = self.wg.stepThroughJsWaf_selenium_pjs("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port), titleNotContains='Just a moment...')
-		self.assertEqual(stepped_through, True)
-
-	def test_sucuri_selenium_pjs(self):
-		stepped_through = self.wg.stepThroughJsWaf_selenium_pjs("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port), titleNotContains="You are being redirected...")
-		self.assertEqual(stepped_through, True)
-
 
 class TestSeleniumGarbageWafPokeThrough(unittest.TestCase):
 	def setUp(self):

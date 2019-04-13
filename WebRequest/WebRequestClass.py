@@ -50,7 +50,6 @@ from . import Domain_Constants
 from . import Exceptions
 from . import utility
 
-from .SeleniumModules import SeleniumPhantomJSMixin
 from .SeleniumModules import SeleniumChromiumMixin
 
 #pylint: disable-msg=E1101, C0325, R0201, W0702, W0703
@@ -67,7 +66,6 @@ GLOBAL_COOKIE_FILE = None
 
 class WebGetRobust(
 		ChromiumMixin.WebGetCrMixin,
-		SeleniumPhantomJSMixin.WebGetSeleniumPjsMixin,
 		SeleniumChromiumMixin.WebGetSeleniumChromiumMixin,
 
 		):
@@ -368,6 +366,7 @@ class WebGetRobust(
 		return content, fileN, mType
 
 	def getHead(self, url, addlHeaders=None):
+		self.log.warning("TODO: Fixme this neds to be migrated to use the normal fetch interface, so it is WAF-aware.")
 		for x in range(9999):
 			try:
 				self.log.info("Doing HTTP HEAD request for '%s'", url)

@@ -65,42 +65,6 @@ class CommonTests():
 		self.assertEqual(ret_2['title'], '')
 
 
-class TestPhantomJS(unittest.TestCase, CommonTests):
-	def setUp(self):
-		self.wg = WebRequest.WebGetRobust()
-
-		# Configure mock server.
-		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_annoying_pjs=True)
-
-		self.get_item_callable = self.wg.getItemPhantomJS
-		self.get_head_callable = self.wg.getHeadPhantomJS
-		self.get_head_title_callable = self.wg.getHeadTitlePhantomJS
-
-	def tearDown(self):
-		self.mock_server.shutdown()
-
-
-	# We expect to get the same value as passed, since pjs will not resolve out
-	# the bad redirects.
-	# Note we have to restart phantomjs for these tests, because otherwise it remembers state (this is why they're separate tests).
-	def test_head_pjs_2(self):
-		url_3 = "http://localhost:{}/redirect/bad-1".format(self.mock_server_port)
-		purl_3 = self.wg.getHeadPhantomJS("http://localhost:{}/redirect/bad-1".format(self.mock_server_port))
-		self.assertEqual(purl_3, url_3)
-
-	def test_head_pjs_3(self):
-		# Somehow, this turns into 'about:blank'. NFI how
-		url_4 = "about:blank"
-		purl_4 = self.wg.getHeadPhantomJS("http://localhost:{}/redirect/bad-2".format(self.mock_server_port))
-		self.assertEqual(purl_4, url_4)
-
-	def test_head_pjs_4(self):
-		# Somehow, this turns into 'about:blank'. NFI how
-		url_5 = "about:blank"
-		purl_5 = self.wg.getHeadPhantomJS("http://localhost:{}/redirect/bad-3".format(self.mock_server_port))
-		self.assertEqual(purl_5, url_5)
-
-
 
 class TestSeleniumChromium(unittest.TestCase, CommonTests):
 	def setUp(self):
