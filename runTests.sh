@@ -20,6 +20,7 @@ set -e
 # 	--with-coverage            \
 # 	--exe                      \
 # 	--cover-package=WebRequest \
+# 	--stop                     \
 # 	tests.test_chromium
 
 # nosetests                      \
@@ -44,6 +45,7 @@ set -e
 # 	--with-coverage            \
 # 	--exe                      \
 # 	--cover-package=WebRequest \
+# 	--nocapture                \
 # 	tests.test_waf_bullshit
 
 nosetests                      \

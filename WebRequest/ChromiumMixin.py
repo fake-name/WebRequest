@@ -89,45 +89,84 @@ class WebGetCrMixin(object):
 		for cookie in cr.get_cookies():
 			self.cj.set_cookie(cookie)
 
-	def getItemChromium(self, itemUrl, extra_tid=False):
-		self.log.info("Fetching page for URL: '%s' with Chromium" % itemUrl)
+	def comprehensiveGetItemChromium(self, url, referrer=None, extra_tid=False, title_timeout=None, need_rendered=False):
 
+		if title_timeout is None:
+			title_timeout = 1
 		if extra_tid is True:
 			extra_tid = threading.get_ident()
 
-		with self._chrome_context(itemUrl, extra_tid=extra_tid) as cr:
+		ret = {}
 
+
+		with self._chrome_context(url, extra_tid=extra_tid) as cr:
+			# print("Starting nav (%s)" % need_rendered)
 			self._syncIntoChromium(cr)
 
-			response = cr.blocking_navigate_and_get_source(itemUrl, timeout=self.navigate_timeout_secs)
+			################################################################################################
+			# Get the raw content
+			response = cr.blocking_navigate_and_get_source(url, timeout=self.navigate_timeout_secs)
+
+
+			# Probably a bad assumption
+			if response['binary']:
+				ret['raw_mimetype'] = "application/x-binary"
+			else:
+				ret['raw_mimetype'] = "text/html"
+
+			# Use the new interface that returns the actual type
+			if 'mimetype' in response:
+				ret['raw_mimetype'] = response['mimetype']
+
+			# So, self._cr.page_source appears to be the *compressed* page source as-rendered. Because reasons.
+			ret['raw_content'] = response['content']
+
+			# Check for a waf before we bother with more stuff.
+			if ret['raw_mimetype'] == 'text/html':
+				raw_content = ret['raw_content']
+				if isinstance(raw_content, str):
+					raw_content = raw_content.encode("UTF-8")
+				self._check_waf(raw_content, url)
 
 			raw_url = cr.get_current_url()
 			fileN = urllib.parse.unquote(urllib.parse.urlparse(raw_url)[2].split("/")[-1])
 			fileN = bs4.UnicodeDammit(fileN).unicode_markup
+			ret['raw_filename'] = fileN
+
+
+			################################################################################################
+			# Now we wait for the page to render (if the content type appears to be html)
+			title, cur_url = cr.get_page_url_title()
+			if title_timeout and ret['raw_mimetype'] == 'text/html':
+				for _ in range(title_timeout * 20):
+					# Wait until the page sets a title. This generally indicates that
+					# the page is fully rendered, which for some reason seems to not
+					# always be true after blocking_navigate, despite the fact that
+					# that call shouldn't return until DOMContentLoaded has fired
+					if cur_url not in title:
+						break
+
+					time.sleep(1.0 / 20.0)
+					title, cur_url = cr.get_page_url_title()
+
+			ret['resolved_title']   = title
+			ret['resolved_url']     = cur_url
+			if need_rendered:
+				ret['resolved_content'] = cr.get_rendered_page_source()
 
 			self._syncOutOfChromium(cr)
+			# print("Done")
 
-		# Probably a bad assumption
-		if response['binary']:
-			mType = "application/x-binary"
-		else:
-			mType = "text/html"
+		return ret
 
-		# Use the new interface that returns the actual type
-		if 'mimetype' in response:
-			mType = response['mimetype']
 
-		# So, self._cr.page_source appears to be the *compressed* page source as-rendered. Because reasons.
-		content = response['content']
+	def getItemChromium(self, itemUrl, referrer=None, extra_tid=False, title_timeout=None):
+		'''
 
-		if isinstance(content, bytes):
-			self._check_waf(content, itemUrl)
-		elif isinstance(content, str):
-			self._check_waf(content.encode("UTF-8"), itemUrl)
-		else:
-			self.log.error("Unknown type of content return: %s" % (type(content), ))
-
-		return content, fileN, mType
+		'''
+		self.log.info("Fetching page for URL: '%s' with Chromium", itemUrl)
+		ret = self._unwaf_func("comprehensiveGetItemChromium", itemUrl, referrer=referrer, extra_tid=extra_tid, title_timeout=title_timeout)
+		return ret['raw_content'], ret['raw_filename'], ret['raw_mimetype']
 
 	def getHeadTitleChromium(self, url, referrer=None, extra_tid=False, title_timeout=None):
 		'''
@@ -135,97 +174,41 @@ class WebGetCrMixin(object):
 		'''
 		self.log.info("Getting HEAD with Chromium")
 
-		if extra_tid is True:
-			extra_tid = threading.get_ident()
+		ret = self._unwaf_func("comprehensiveGetItemChromium", url, referrer=referrer, extra_tid=extra_tid, title_timeout=title_timeout)
 
-		with self._chrome_context(url, extra_tid=extra_tid) as cr:
-			self._syncIntoChromium(cr)
-
-			if referrer:
-				cr.blocking_navigate(referrer)
-				time.sleep(random.uniform(2, 6))
-			cr.blocking_navigate(url)
-
-
-			title, cur_url = cr.get_page_url_title()
-
-			if title_timeout:
-				for _ in range(title_timeout):
-					# Wait until the page sets a title. This generally indicates that
-					# the page is fully rendered, which for some reason seems to not
-					# always be true after blocking_navigate, despite the fact that
-					# that call shouldn't return until DOMContentLoaded has fired
-					if cur_url not in title:
-						break
-					time.sleep(1)
-
-					title, cur_url = cr.get_page_url_title()
-
-			self._syncOutOfChromium(cr)
-
-		self.log.info("Resolved URL for %s -> %s", url, cur_url)
+		self.log.info("Resolved URL for %s -> %s (%s)", url, ret['resolved_url'], ret['resolved_title'])
 
 		ret = {
-			'url': cur_url,
-			'title': title,
+			'url': ret['resolved_url'],
+			'title': ret['resolved_title'],
 		}
 		return ret
 
 	def getHeadChromium(self, url, referrer=None, extra_tid=None):
+		'''
+
+		'''
 		self.log.info("Getting HEAD with Chromium")
-		if not referrer:
-			referrer = url
+		ret = self._unwaf_func("comprehensiveGetItemChromium", url, referrer=referrer, extra_tid=extra_tid)
+		self.log.info("Resolved URL for %s -> %s", url, ret['resolved_url'])
 
-		if extra_tid is True:
-			extra_tid = threading.get_ident()
-
-		with self._chrome_context(url, extra_tid=extra_tid) as cr:
-			self._syncIntoChromium(cr)
-
-			cr.blocking_navigate(referrer)
-			time.sleep(random.uniform(2, 6))
-			cr.blocking_navigate(url)
-
-			dummy_title, cur_url = cr.get_page_url_title()
-
-			self._syncOutOfChromium(cr)
-
-		return cur_url
+		return ret['resolved_url']
 
 
-	def chromiumGetRenderedItem(self, url, extra_tid=None, title_timeout=None):
+	def chromiumGetRenderedItem(self, url, referrer=None, extra_tid=None, title_timeout=None):
+		'''
 
-		if extra_tid is True:
-			extra_tid = threading.get_ident()
+		'''
+		self.log.info("Getting rendered content with Chromium")
 
-		with self._chrome_context(url, extra_tid=extra_tid) as cr:
-			self._syncIntoChromium(cr)
+		ret = self._unwaf_func("comprehensiveGetItemChromium", url,
+				referrer      = referrer,
+				extra_tid     = extra_tid,
+				title_timeout = title_timeout,
+				need_rendered = True
+			)
 
-			# get_rendered_page_source
-			cr.blocking_navigate(url)
-
-
-			title, cur_url = cr.get_page_url_title()
-			if title_timeout:
-				for _ in range(title_timeout):
-					# Wait until the page sets a title. This generally indicates that
-					# the page is fully rendered, which for some reason seems to not
-					# always be true after blocking_navigate, despite the fact that
-					# that call shouldn't return until DOMContentLoaded has fired
-					if cur_url not in title:
-						break
-					time.sleep(1)
-					title, cur_url = cr.get_page_url_title()
-
-			content = cr.get_rendered_page_source()
-			mType = 'text/html'
-			fileN = ''
-			self._syncOutOfChromium(cr)
-
-
-		self._check_waf(content.encode("UTF-8"), url)
-
-		return content, fileN, mType
+		return ret['resolved_content'], ret['raw_filename'], ret['raw_mimetype']
 
 
 	def __del__(self):

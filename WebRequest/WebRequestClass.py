@@ -137,9 +137,15 @@ class WebGetRobust(
 
 
 
-	def getpage(self, requestedUrl, *args, **kwargs):
+	def _unwaf_func(self, funcname, requestedUrl, *args, **kwargs):
+		'''
+		Call func `funcname` on the WebRequest class, handling a WAF exception
+		automatically if it occurs
+		'''
+		target_func = getattr(self, funcname)
+
 		try:
-			return self.__getpage(requestedUrl, *args, **kwargs)
+			return target_func(requestedUrl, *args, **kwargs)
 
 		except Exceptions.CloudFlareWrapper:
 			if self.rules['auto_waf']:
@@ -147,7 +153,7 @@ class WebGetRobust(
 				if not self.stepThroughCloudFlareWaf(requestedUrl):
 					raise Exceptions.FetchFailureError("Could not step through cloudflare!", requestedUrl)
 				# Cloudflare cookie set, retrieve again
-				return self.__getpage(requestedUrl, *args, **kwargs)
+				return target_func(requestedUrl, *args, **kwargs)
 
 			else:
 				self.log.info("Cloudflare without step-through setting!")
@@ -159,10 +165,23 @@ class WebGetRobust(
 				self.log.warning("Sucuri failure! Doing automatic step-through.")
 				if not self.stepThroughSucuriWaf(requestedUrl):
 					raise Exceptions.FetchFailureError("Could not step through Sucuri WAF bullshit!", requestedUrl)
-				return self.__getpage(requestedUrl, *args, **kwargs)
+				return target_func(requestedUrl, *args, **kwargs)
 			else:
 				self.log.info("Sucuri without step-through setting!")
 				raise
+
+
+
+
+	def getpage(self, requestedUrl, *args, **kwargs):
+		'''
+		Get page at `requestedUrl`, while automatically handling a WAF,
+		if one is encountered
+
+		'''
+
+		return self._unwaf_func("_getpage", requestedUrl, *args, **kwargs)
+
 
 
 
@@ -454,7 +473,7 @@ class WebGetRobust(
 			self.__check_cf_cookie(components)
 
 
-	def __getpage(self, requestedUrl, **kwargs):
+	def _getpage(self, requestedUrl, **kwargs):
 		self.__pre_check(requestedUrl)
 
 		self.log.info("Fetching content at URL: %s", requestedUrl)
