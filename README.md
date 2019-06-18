@@ -21,10 +21,11 @@ an actual browser from the perspective of the remote HTTP(s) server.
 
 Other useful bits:
 
-API wrapper for 2captcha.com which includes automatic local reverse-proxy spinup
-for reflecting recaptcha requests through your local host address. This involves
-spinning up a transient SOCKS5 proxy, setting up a limited duration port-forward
-(10 minutes, via UPnP), and actual synchronous captcha solving calls.
+API wrappers for 2captcha.com and anticaptcha.com which include automatic local 
+reverse-proxy spinup for reflecting recaptcha requests through your local host 
+address. This involves spinning up a transient SOCKS5 proxy, setting up a limited 
+duration port-forward (10 minutes, via UPnP), and actual synchronous captcha 
+solving calls.
 
 The proxy setup/UPnP setup functions are generic enough that they should be 
 useful for any captcha-solver-related tasks. If you'd like support for another 
