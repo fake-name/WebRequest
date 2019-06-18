@@ -13,5 +13,5 @@ upnpclient
 python_anticaptcha 
 
 # Socks server (and crypto accelerator)
-pproxy 
+pproxy=1.5.2
 pycryptodome
