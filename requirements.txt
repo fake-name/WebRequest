@@ -1,9 +1,12 @@
 
 ChromeController>=0.3.5
 beautifulsoup4>=4.6.0
-selenium>=3.8.1
 cchardet>=2.1.1
 lxml>=4.1.1
+
+# FFFuuuuu cloudflare
+cloudscraper 
+js2py
 
 # Sadface. So we need a socks client library, and a socks host 
 # library, and they're different.
@@ -13,5 +16,5 @@ upnpclient
 python_anticaptcha 
 
 # Socks server (and crypto accelerator)
-pproxy=1.5.2
+pproxy==1.5.2
 pycryptodome

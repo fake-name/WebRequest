@@ -49,6 +49,7 @@ from . import UA_Constants
 from . import Domain_Constants
 from . import Exceptions
 from . import utility
+from . import CloudscraperMixin
 
 from .SeleniumModules import SeleniumChromiumMixin
 
@@ -65,9 +66,9 @@ GLOBAL_COOKIE_FILE = None
 # Arrrgh.
 
 class WebGetRobust(
-		ChromiumMixin.WebGetCrMixin,
-		SeleniumChromiumMixin.WebGetSeleniumChromiumMixin,
-
+			ChromiumMixin.WebGetCrMixin,
+			SeleniumChromiumMixin.WebGetSeleniumChromiumMixin,
+			CloudscraperMixin.WebGetCloudscraperMixin,
 		):
 
 	COOKIEFILE = 'cookies.lwp'				# the path and filename to save your cookies in
@@ -75,6 +76,7 @@ class WebGetRobust(
 	cookielib = None
 	opener = None
 
+	timeout = 30
 	errorOutCount = 1
 	# retryDelay = 0.1
 	retryDelay = 0.01
@@ -390,7 +392,7 @@ class WebGetRobust(
 			try:
 				self.log.info("Doing HTTP HEAD request for '%s'", url)
 				pgreq = self.__buildRequest(url, None, addlHeaders, None, req_class=Handlers.HeadRequest)
-				pghandle = self.opener.open(pgreq, timeout=30)
+				pghandle = self.opener.open(pgreq, timeout=self.timeout)
 				returl = pghandle.geturl()
 				if returl != url:
 					self.log.info("HEAD request returned a different URL '%s'", returl)
@@ -533,7 +535,7 @@ class WebGetRobust(
 			#print "execution", retryCount
 			try:
 				# print("Getpage!", requestedUrl, kwargs)
-				pghandle = self.opener.open(pgreq, timeout=30)					# Get Webpage
+				pghandle = self.opener.open(pgreq, timeout=self.timeout)					# Get Webpage
 				# print("Gotpage")
 
 			except Exceptions.GarbageSiteWrapper as err:
@@ -566,9 +568,10 @@ class WebGetRobust(
 					break
 
 				time.sleep(self.retryDelay)
-				if err.code == 503:
-					if err_content:
-						self._check_waf(err_content, requestedUrl)
+
+				if (err.code == 403 or err.code == 429 or err.code == 503) and err_content:
+
+					self._check_waf(err_content, requestedUrl)
 
 				# So I've been seeing this causing CF to bounce too.
 				# As such, poke through those via chromium too.
@@ -1098,7 +1101,9 @@ class WebGetRobust(
 
 
 	def stepThroughCloudFlareWaf(self, url):
-		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
+		# return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
+		return self.handle_cloudflare_cloudscraper(url)
+
 	def stepThroughSucuriWaf(self, url):
 		return self.stepThroughJsWaf(url, titleNotContains="You are being redirected...")
 
@@ -1110,3 +1115,9 @@ class WebGetRobust(
 	# Compat for old code.
 	def stepThroughCloudFlare(self, *args, **kwargs):
 		return self.stepThroughJsWaf(*args, **kwargs)
+
+
+if __name__ == '__main__':
+	cs = WebGetRobust()
+	cs.handle_cloudflare_cloudscraper("https://www.cloudflare.com/")
+
