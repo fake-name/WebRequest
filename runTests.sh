@@ -46,7 +46,7 @@ set -e
 # 	--exe                      \
 # 	--cover-package=WebRequest \
 # 	--nocapture                \
-# 	tests.test_waf_bullshit
+# 	tests.test_waf_bullshit.TestWafPokeThrough
 
 nosetests                      \
 	--with-coverage            \

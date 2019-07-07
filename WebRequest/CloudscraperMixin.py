@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import traceback
 import collections
 import cloudscraper
 
@@ -11,6 +12,7 @@ class WebGetCloudscraperMixin(object):
 			self.addCookie(cookie)
 
 	def handle_cloudflare_cloudscraper(self, url):
+		self.log.info("Using cloudscraper to attempt to circumvent cloudflare.")
 		scraper = cloudscraper.create_scraper()
 
 		# Sync our headers.
@@ -24,6 +26,8 @@ class WebGetCloudscraperMixin(object):
 
 		except Exception:
 			self.log.error('"{}" returned an error. Could not collect tokens.'.format(url))
+			for line in traceback.format_exc().split("\n"):
+				self.log.error(line)
 			return False
 
 

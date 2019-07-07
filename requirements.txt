@@ -12,9 +12,9 @@ js2py
 # library, and they're different.
 PySocks>=1.6.8
 
-upnpclient
-python_anticaptcha 
+upnpclient==0.0.8
+python_anticaptcha==0.3.1
 
 # Socks server (and crypto accelerator)
-pproxy==1.5.2
+pproxy==1.5.2    # Yes, we need to pin this exact version.
 pycryptodome

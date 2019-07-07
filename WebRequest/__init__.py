@@ -1,5 +1,6 @@
 
 from .WebRequestClass import WebGetRobust
+from .WebRequestClass import PlainWafWebGetRobust
 
 from .utility import as_soup
 
@@ -19,4 +20,5 @@ from .Exceptions import CaptchaNotReady
 
 from .Captcha.AntiCaptchaSolver import AntiCaptchaSolver
 from .Captcha.TwoCaptchaSolver import TwoCaptchaSolver
+
 from .Exceptions import CaptchaSolverFailure

@@ -42,7 +42,6 @@ except ImportError:    # pragma: no cover
 
 from . import HeaderParseMonkeyPatch
 
-from . import ChromiumMixin
 from . import Handlers
 from . import iri2uri
 from . import UA_Constants
@@ -50,6 +49,7 @@ from . import Domain_Constants
 from . import Exceptions
 from . import utility
 from . import CloudscraperMixin
+from . import ChromiumMixin
 
 from .SeleniumModules import SeleniumChromiumMixin
 
@@ -465,6 +465,8 @@ class WebGetRobust(
 			self.__check_suc_cookie(components)
 		elif netloc_l in Domain_Constants.CF_GARBAGE_SITE_NETLOCS:
 			self.__check_cf_cookie(components)
+
+		# Testing
 		elif components.path == '/sucuri_shit_2':
 			self.__check_suc_cookie(components)
 		elif components.path == '/sucuri_shit_3':
@@ -1115,6 +1117,11 @@ class WebGetRobust(
 	# Compat for old code.
 	def stepThroughCloudFlare(self, *args, **kwargs):
 		return self.stepThroughJsWaf(*args, **kwargs)
+
+
+class PlainWafWebGetRobust(WebGetRobust):
+	def stepThroughCloudFlareWaf(self, url):
+		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
 
 
 if __name__ == '__main__':

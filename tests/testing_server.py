@@ -469,11 +469,13 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 						return
 
 				container_dir = os.path.dirname(__file__)
-				fpath = os.path.join(container_dir, "waf_garbage", 'cloudflare_bullshit.html')
+				fpath = os.path.join(container_dir, "waf_garbage", 'cf_js_challenge_03_12_2018.html')
 				with open(fpath, "rb") as fp:
 					plain_contents = fp.read()
 
+				self.server_version = "cloudflare is garbage"
 				self.send_response(503)
+				self.send_header('Server', "cloudflare is garbage")
 				self.send_header('Content-type','text/html')
 				self.end_headers()
 				self.wfile.write(plain_contents)
@@ -494,17 +496,18 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 						return
 
 				container_dir = os.path.dirname(__file__)
-				fpath = os.path.join(container_dir, "waf_garbage", 'cloudflare_bullshit.html')
+				fpath = os.path.join(container_dir, "waf_garbage", 'cf_js_challenge_03_12_2018.html')
 				with open(fpath, "rb") as fp:
 					plain_contents = fp.read()
 
+				self.server_version = "cloudflare is garbage"
 				self.send_response(503)
+				self.send_header('Server', "cloudflare is garbage")
 				self.send_header('Content-type','text/html')
 				self.end_headers()
 				self.wfile.write(plain_contents)
 
-			elif (self.path == '/cdn-cgi/l/chk_jschl?jschl_vc=b10392d4929902df66c5d69ff703fde7&pass=1516685611.828-z5pqL%2FrL34&jschl_answer=3161' or
-				  self.path == '/cdn-cgi/l/chk_jschl?jschl_vc=b10392d4929902df66c5d69ff703fde7&pass=1516685611.828-z5pqL%2FrL34&jschl_answer=3160'):
+			elif self.path == '/cdn-cgi/l/chk_jschl?jschl_vc=427c2b1cd4fba29608ee81b200e94bfa&pass=1543827239.915-44n9IE20mS&jschl_answer=9.66734594':
 
 				cook = cookies.SimpleCookie()
 				cook['cloudflare_validate_key'] = cookie_key

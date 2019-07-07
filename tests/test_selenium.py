@@ -97,6 +97,6 @@ class TestSeleniumChromium(unittest.TestCase, CommonTests):
 	def test_head_scromium_4(self):
 		# Somehow, this turns into 'about:blank'. NFI how
 		in_url_5 = "http://localhost:{}/redirect/bad-3".format(self.mock_server_port)
-		url_5 = "data:,"
+		url_5 = "gopher://www.google.com/"
 		purl_5 = self.wg.getHeadSeleniumChromium(in_url_5)
 		self.assertEqual(purl_5, url_5)
