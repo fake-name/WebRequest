@@ -74,6 +74,7 @@ class WebGetCrMixin(object):
 			return ChromeController.ChromeContext(binary=self._cr_binary)
 
 	def _syncIntoChromium(self, cr):
+		self.log.info("Syncing cookies into chromium")
 		cr.clear_cookies()
 		# Headers are a list of 2-tuples. We need a dict
 		hdict = dict(self.browserHeaders)
@@ -86,6 +87,7 @@ class WebGetCrMixin(object):
 				cr.set_cookie(cookie)
 
 	def _syncOutOfChromium(self, cr):
+		self.log.info("Syncing cookies out from chromium")
 		for cookie in cr.get_cookies():
 			self.cj.set_cookie(cookie)
 
@@ -156,6 +158,8 @@ class WebGetCrMixin(object):
 
 			self._syncOutOfChromium(cr)
 			# print("Done")
+
+		self.log.info("Chromium fetch complete.")
 
 		return ret
 
