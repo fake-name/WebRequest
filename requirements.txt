@@ -4,11 +4,13 @@ beautifulsoup4>=4.6.0
 cchardet>=2.1.1
 lxml>=4.1.1
 
+selenium
+
 # FFFuuuuu cloudflare
-cloudscraper 
+cloudscraper
 js2py
 
-# Sadface. So we need a socks client library, and a socks host 
+# Sadface. So we need a socks client library, and a socks host
 # library, and they're different.
 PySocks>=1.6.8
 
