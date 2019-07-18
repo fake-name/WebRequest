@@ -86,17 +86,20 @@ class WebGetRobust(
 	# creds is a list of 3-tuples that gets inserted into the password manager.
 	# it is structured [(top_level_url1, username1, password1), (top_level_url2, username2, password2)]
 	def __init__(self,
-			creds         = None,
-			logPath       = "Main.WebRequest",
-			cookie_lock   = None,
-			cloudflare    = True,
-			auto_waf      = True,
-			use_socks     = False,
-			alt_cookiejar = None,
-			custom_ua     = None,
+			creds         : dict                        = None,
+			logPath       : str                         = "Main.WebRequest",
+			cookie_lock   : Lock                        = None,
+			cloudflare    : bool                        = True,
+			auto_waf      : bool                        = True,
+			use_socks     : bool                        = False,
+			alt_cookiejar : http.cookiejar.LWPCookieJar = None,
+			custom_ua     : dict                        = None,
 			):
 
 		super().__init__()
+
+		self.log = logging.getLogger(logPath)
+		# print("Webget init! Logpath = ", logPath)
 
 		self.rules = {}
 		self.rules['auto_waf'] = cloudflare or auto_waf
@@ -112,8 +115,6 @@ class WebGetRobust(
 		# Override the global default socket timeout, so hung connections will actually time out properly.
 		socket.setdefaulttimeout(5)
 
-		self.log = logging.getLogger(logPath)
-		# print("Webget init! Logpath = ", logPath)
 
 		if custom_ua:
 			self.log.info("User agent overridden!")
@@ -139,7 +140,7 @@ class WebGetRobust(
 
 
 
-	def _unwaf_func(self, funcname, requestedUrl, *args, **kwargs):
+	def _unwaf_func(self, funcname:str, requestedUrl:str, *args, **kwargs):
 		'''
 		Call func `funcname` on the WebRequest class, handling a WAF exception
 		automatically if it occurs
@@ -175,7 +176,7 @@ class WebGetRobust(
 
 
 
-	def getpage(self, requestedUrl, *args, **kwargs):
+	def getpage(self, requestedUrl:str, *args, **kwargs):
 		'''
 		Get page at `requestedUrl`, while automatically handling a WAF,
 		if one is encountered
@@ -184,18 +185,15 @@ class WebGetRobust(
 
 		return self._unwaf_func("_getpage", requestedUrl, *args, **kwargs)
 
-
-
-
-	def chunkReport(self, bytesSoFar, totalSize):
+	def chunkReport(self, bytesSoFar, totalSize):   # noqa
 		if totalSize:
 			percent = float(bytesSoFar) / totalSize
 			percent = round(percent * 100, 2)
-			self.log.info("Downloaded %d of %d bytes (%0.2f%%)" % (bytesSoFar, totalSize, percent))
+			self.log.info("Downloaded %d of %d bytes (%0.2f%%)", bytesSoFar, totalSize, percent)
 		else:
-			self.log.info("Downloaded %d bytes" % (bytesSoFar))
+			self.log.info("Downloaded %d bytes", bytesSoFar)
 
-	def __chunkRead(self, response, chunkSize=2 ** 18, reportHook=None):
+	def __chunkRead(self, response, chunkSize:int=2 ** 18, reportHook=None):    # noqa
 		contentLengthHeader = response.info().getheader('Content-Length')
 		if contentLengthHeader:
 			totalSize = contentLengthHeader.strip()
@@ -217,7 +215,7 @@ class WebGetRobust(
 
 		return pgContent
 
-	def getSoup(self, requestedUrl, *args, **kwargs):
+	def getSoup(self, requestedUrl:str, *args, **kwargs):
 		if 'returnMultiple' in kwargs and kwargs['returnMultiple']:
 			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", requestedUrl)
 
@@ -231,7 +229,7 @@ class WebGetRobust(
 		soup = utility.as_soup(page)
 		return soup
 
-	def getJson(self, requestedUrl, *args, **kwargs):
+	def getJson(self, requestedUrl:str, *args, **kwargs):
 		if 'returnMultiple' in kwargs and kwargs['returnMultiple']:
 			raise Exceptions.ArgumentError("getSoup cannot be called with 'returnMultiple' being true", requestedUrl)
 
@@ -310,7 +308,7 @@ class WebGetRobust(
 		pgctnt, hName, mime = self.getFileNameMime(*args, **kwargs)
 		return pgctnt, hName
 
-	def getFileNameMime(self, requestedUrl, *args, **kwargs):
+	def getFileNameMime(self, requestedUrl:str, *args, **kwargs):
 		'''
 		Give a requested page (note: the arguments for this call are forwarded to getpage()),
 		return the content at the target URL, the filename for the target content, and
@@ -356,7 +354,7 @@ class WebGetRobust(
 
 
 
-	def getItem(self, itemUrl):
+	def getItem(self, itemUrl:str):
 		content, handle = self.getpage(itemUrl, returnMultiple=True)
 
 		if not content or not handle:
@@ -386,7 +384,7 @@ class WebGetRobust(
 		self.log.info("Retreived file of type '%s', name of '%s' with a size of %0.3f K", mType, fileN, len(content)/1000.0)
 		return content, fileN, mType
 
-	def getHead(self, url, addlHeaders=None):
+	def getHead(self, url:str, addlHeaders:dict=None):
 		self.log.warning("TODO: Fixme this neds to be migrated to use the normal fetch interface, so it is WAF-aware.")
 		for x in range(9999):
 			try:
@@ -453,7 +451,7 @@ class WebGetRobust(
 		# raise RuntimeError
 		pass
 
-	def __pre_check(self, requestedUrl):
+	def __pre_check(self, requestedUrl:str):
 		'''
 		Allow the pre-emptive fetching of sites with a full browser if they're known
 		to be dick hosters.
@@ -477,7 +475,7 @@ class WebGetRobust(
 			self.__check_cf_cookie(components)
 
 
-	def _getpage(self, requestedUrl, **kwargs):
+	def _getpage(self, requestedUrl:str, **kwargs):
 		self.__pre_check(requestedUrl)
 
 		self.log.info("Fetching content at URL: %s", requestedUrl)
@@ -646,7 +644,7 @@ class WebGetRobust(
 	######################################################################################################################################################
 	######################################################################################################################################################
 
-	def __decode_text_content(self, pageContent, cType):
+	def __decode_text_content(self, pageContent:[str, bytes], cType:str):
 
 		# this *should* probably be done using a parser.
 		# However, it seems to be grossly overkill to shove the whole page (which can be quite large) through a parser just to pull out a tag that
@@ -700,7 +698,7 @@ class WebGetRobust(
 
 		return pageContent
 
-	def __buildRequest(self, pgreq, postData, addlHeaders, binaryForm, req_class = None):
+	def __buildRequest(self, pgreq, postData:dict, addlHeaders:dict, binaryForm, req_class = None):
 		if req_class is None:
 			req_class = urllib.request.Request
 
@@ -737,7 +735,7 @@ class WebGetRobust(
 			self.log.critical("Invalid header or url")
 			raise
 
-	def __decompressContent(self, coding, pgctnt):
+	def __decompressContent(self, coding:str, pgctnt:bytes):
 		"""
 		This is really obnoxious
 		"""
@@ -792,7 +790,7 @@ class WebGetRobust(
 
 		return compType, pgctnt
 
-	def __decodeTextContent(self, pgctnt, cType):
+	def __decodeTextContent(self, pgctnt:bytes, cType:str):
 
 		if cType:
 			if (";" in cType) and ("=" in cType):
@@ -900,7 +898,7 @@ class WebGetRobust(
 		# postData expects a dict
 		# addlHeaders also expects a dict
 
-	def _check_waf(self, pageContent, pageUrl):
+	def _check_waf(self, pageContent:bytes, pageUrl:str):
 		assert isinstance(pageContent, bytes), "Item pageContent must be of type bytes, received %s" % (type(pageContent), )
 		assert isinstance(pageUrl, str), "Item pageUrl must be of type str, received %s" % (type(pageUrl), )
 
@@ -980,7 +978,7 @@ class WebGetRobust(
 		self.cj.set_cookie(inCookie)
 
 
-	def addSeleniumCookie(self, cookieDict):
+	def addSeleniumCookie(self, cookieDict:dict):
 		'''
 		Install a cookie exported from a selenium webdriver into
 		the active opener
@@ -1008,7 +1006,7 @@ class WebGetRobust(
 
 		self.addCookie(cookie)
 
-	def saveCookies(self, halting=False):
+	def saveCookies(self, halting:bool=False):
 
 		if self.cookie_lock:
 			locked = self.cookie_lock.acquire(timeout=5)
@@ -1102,11 +1100,11 @@ class WebGetRobust(
 
 
 
-	def stepThroughCloudFlareWaf(self, url):
+	def stepThroughCloudFlareWaf(self, url:str):
 		# return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
 		return self.handle_cloudflare_cloudscraper(url)
 
-	def stepThroughSucuriWaf(self, url):
+	def stepThroughSucuriWaf(self, url:str):
 		return self.stepThroughJsWaf(url, titleNotContains="You are being redirected...")
 
 	def stepThroughJsWaf(self, *args, **kwargs):
@@ -1120,7 +1118,7 @@ class WebGetRobust(
 
 
 class PlainWafWebGetRobust(WebGetRobust):
-	def stepThroughCloudFlareWaf(self, url):
+	def stepThroughCloudFlareWaf(self, url:str):
 		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
 
 

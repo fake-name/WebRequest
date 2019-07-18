@@ -62,7 +62,7 @@ class WebGetCrMixin(object):
 			self.borg_chrome_pool = None
 
 
-	def _chrome_context(self, itemUrl, extra_tid):
+	def _chrome_context(self, itemUrl:str, extra_tid):
 		if self.borg_chrome_pool and self.borg_chrome_pool is True:
 			self.log.info("Initializing chromium pool on first use!")
 			self.borg_chrome_pool = ChromiumBorg(chrome_binary=self._cr_binary)
@@ -164,7 +164,7 @@ class WebGetCrMixin(object):
 		return ret
 
 
-	def getItemChromium(self, itemUrl, referrer=None, extra_tid=False, title_timeout=None):
+	def getItemChromium(self, itemUrl:str, referrer:str=None, extra_tid=False, title_timeout:int=None):
 		'''
 
 		'''
@@ -172,7 +172,7 @@ class WebGetCrMixin(object):
 		ret = self._unwaf_func("comprehensiveGetItemChromium", itemUrl, referrer=referrer, extra_tid=extra_tid, title_timeout=title_timeout)
 		return ret['raw_content'], ret['raw_filename'], ret['raw_mimetype']
 
-	def getHeadTitleChromium(self, url, referrer=None, extra_tid=False, title_timeout=None):
+	def getHeadTitleChromium(self, url:str, referrer:str=None, extra_tid=False, title_timeout:int=None):
 		'''
 
 		'''
@@ -188,7 +188,7 @@ class WebGetCrMixin(object):
 		}
 		return ret
 
-	def getHeadChromium(self, url, referrer=None, extra_tid=None):
+	def getHeadChromium(self, url:str, referrer:str=None, extra_tid=None):
 		'''
 
 		'''
@@ -199,7 +199,7 @@ class WebGetCrMixin(object):
 		return ret['resolved_url']
 
 
-	def chromiumGetRenderedItem(self, url, referrer=None, extra_tid=None, title_timeout=None):
+	def chromiumGetRenderedItem(self, url:str, referrer:str=None, extra_tid=None, title_timeout:int=None):
 		'''
 
 		'''
@@ -221,7 +221,7 @@ class WebGetCrMixin(object):
 		if hasattr(sup, '__del__'):
 			sup.__del__()
 
-	def stepThroughJsWaf_bare_chromium(self, url, titleContains='', titleNotContains='', extra_tid=None):
+	def stepThroughJsWaf_bare_chromium(self, url:str, titleContains:str='', titleNotContains:str='', extra_tid=None):
 		'''
 		Use Chromium to access a resource behind WAF protection.
 
@@ -279,7 +279,7 @@ class WebGetCrMixin(object):
 		return False
 
 
-	def chromiumContext(self, url, extra_tid=None):
+	def chromiumContext(self, url:str, extra_tid=None):
 		'''
 		Return a active chromium context, useable for manual operations directly against
 		chromium.
