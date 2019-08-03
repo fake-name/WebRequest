@@ -1,4 +1,14 @@
-#!/usr/bin/python3
+
+
+# A urllib2 wrapper that provides error handling and logging, as
+# well as cookie management. It's a bit crude, but it works.
+# Also supports transport compresion.
+# OOOOLLLLLLDDDDD, has lots of creaky internals. Needs some cleanup
+# desperately, but lots of crap depends on almost everything.
+# Arrrgh.
+#
+# This code is terrible, and probably shouldn't be used by anyone ever.
+
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -60,10 +70,6 @@ COOKIEWRITELOCK = Lock()
 GLOBAL_COOKIE_FILE = None
 
 
-# A urllib2 wrapper that provides error handling and logging, as well as cookie management. It's a bit crude, but it works.
-# Also supports transport compresion.
-# OOOOLLLLLLDDDDD, has lots of creaky internals. Needs some cleanup desperately, but lots of crap depends on almost everything.
-# Arrrgh.
 
 class WebGetRobust(
 			ChromiumMixin.WebGetCrMixin,

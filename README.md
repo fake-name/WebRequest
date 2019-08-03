@@ -1,11 +1,11 @@
 ### WebRequest  [![Build Status](https://travis-ci.org/fake-name/WebRequest.svg?branch=master)](https://travis-ci.org/fake-name/WebRequest)[![Coverage Status](https://img.shields.io/coveralls/fake-name/WebRequest.svg)](https://coveralls.io/r/fake-name/WebRequest)
 
-Like the `requests` library, but shittier.
+Like the `requests` library, but less good.
 
 Provides convenience functions for writing web-scrapers and other web-interactive
-things. Built-in support for working through ButtFlare's garbage JS browser
+things. Built-in support for working through CloudFlare's garbage JS browser
 checks without any intervention, as well as some other [garbage web-application 
-firewall shits](https://sucuri.net/website-firewall/) that seem intent on 
+firewalls](https://sucuri.net/website-firewall/) that seem intent on 
 breaking the internet.
 
 Built-in user-agent randomization. Support for fetching rendered content via 
