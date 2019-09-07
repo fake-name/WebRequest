@@ -69,6 +69,7 @@ def get_command_name(value):
     else:
         return None
 
+log = logging.getLogger("Main.Socks5Proxy")
 
 def build_command_response(reply):
     start = b'\x05%s\x00\x01\x00\x00\x00\x00\x00\x00'
@@ -77,7 +78,7 @@ def build_command_response(reply):
 
 def close_session(session):
     session.get_client_socket().close()
-    logging.info("Session[%s] closed", session.get_id())
+    log.info("Session[%s] closed", session.get_id())
 
 
 def run_daemon_process(stdout    = '/dev/null',
@@ -263,7 +264,7 @@ class CommandExecutor:
         :return: None
         """
         address = self.__get_address()
-        logging.info("Connect request to %s", address)
+        log.info("Connect request to %s", address)
         result = self.__proxy_socket.connect_ex(address)
         if result == 0:
             self.__client.send(build_command_response(ReplyType.SUCCEEDED))
@@ -276,7 +277,7 @@ class CommandExecutor:
         elif result == 61:
             self.__client.send(build_command_response(ReplyType.NETWORK_UNREACHABLE))
         else:
-            logging.error('Connection Error:[%s] is unknown', result)
+            log.error('Connection Error:[%s] is unknown', result)
             self.__client.send(build_command_response(ReplyType.NETWORK_UNREACHABLE))
 
     def do_bind(self):
@@ -334,10 +335,10 @@ class Socks5RequestHandler(StreamRequestHandler):
 
     def handle(self):
         session = Session(self.connection)
-        logging.info('Create session[%s] for %s:%d', 1, self.client_address[0], self.client_address[1])
+        log.info('Create session[%s] for %s:%d', 1, self.client_address[0], self.client_address[1])
         # print(self.server.allowed)
         if self.server.allowed and self.client_address[0] not in self.server.allowed:
-            logging.info('Remote IP not in allowed list. Closing connection')
+            log.info('Remote IP not in allowed list. Closing connection')
             close_session(session)
             return
         client = self.connection
@@ -351,11 +352,11 @@ class Socks5RequestHandler(StreamRequestHandler):
         elif methods.__contains__(SocksMethod.USERNAME_PASSWORD) and auth:
             client.send(b"\x05\x02")
             if not self.__do_username_password_auth():
-                logging.info('Session[%d] authentication failed', session.get_id())
+                log.info('Session[%d] authentication failed', session.get_id())
                 close_session(session)
                 return
         else:
-            logging.info('Client requested unknown method (%s, %s->%s). Cannot continue.', methods, method_num, meth_bytes)
+            log.info('Client requested unknown method (%s, %s->%s). Cannot continue.', methods, method_num, meth_bytes)
             client.send(b"\x05\xFF")
             return
 
@@ -376,20 +377,20 @@ class Socks5RequestHandler(StreamRequestHandler):
                 ip6_13, ip6_14, ip6_15, ip6_16,  \
                 port = struct.unpack('!' + ('b' * 16) + 'H', client.recv(18))
 
-            logging.warn("Address type not implemented: %s (IPV6 Connect)", address_type)
-            logging.info("Params: %s, port: %s", (ip6_01, ip6_02, ip6_03, ip6_04, ip6_05, ip6_06, ip6_07, ip6_08, ip6_09, ip6_10, ip6_11, ip6_12, ip6_13, ip6_14, ip6_15, ip6_16), port)
+            log.warn("Address type not implemented: %s (IPV6 Connect)", address_type)
+            log.info("Params: %s, port: %s", (ip6_01, ip6_02, ip6_03, ip6_04, ip6_05, ip6_06, ip6_07, ip6_08, ip6_09, ip6_10, ip6_11, ip6_12, ip6_13, ip6_14, ip6_15, ip6_16), port)
             client.send(build_command_response(ReplyType.ADDRESS_TYPE_NOT_SUPPORTED))
             return
 
         else:  # address type not support
-            logging.warn("Address type not supported: %s", address_type)
+            log.warn("Address type not supported: %s", address_type)
             client.send(build_command_response(ReplyType.ADDRESS_TYPE_NOT_SUPPORTED))
             return
 
 
         command_executor = CommandExecutor(host, port, session)
         if command == SocksCommand.CONNECT:
-            logging.info("Session[%s] Request connect %s:%s", session.get_id(), host, port)
+            log.info("Session[%s] Request connect %s:%s", session.get_id(), host, port)
             command_executor.do_connect()
         close_session(session)
 
@@ -426,7 +427,7 @@ class Socks5Server(ThreadingTCPServer):
         self.th             = threading.Thread(target=self.serve_forever)
 
     def serve_forever(self, poll_interval=0.5):
-        logging.info("Create SOCKS5 server at port %d", self.__port)
+        log.info("Create SOCKS5 server at port %d", self.__port)
         ThreadingTCPServer.serve_forever(self, poll_interval)
 
     def finish_request(self, request, client_address):
@@ -588,7 +589,7 @@ def main():
     except KeyboardInterrupt:
         socks5_server.server_close()
         socks5_server.shutdown()
-        logging.info("SOCKS5 server shutdown")
+        log.info("SOCKS5 server shutdown")
 
 
 if __name__ == '__main__':
