@@ -24,6 +24,8 @@ ANTICAPTCHA_IPS = [
 		"78.46.86.231",
 		"209.212.146.168",
 	]
+# Maybe use http://api.anti-captcha.com/getProxygateAddress for deriving these addresses in the future?
+
 
 class AntiCaptchaSolver(object):
 	def __init__(self, api_key, wg):
