@@ -16,8 +16,12 @@ from .. import Exceptions as exc
 from . import SocksProxy
 
 # This is hardcoded. Huh.
+# So UPnP /supports/ remote address filtering, despite most of the documentation
+# I've found saying it does not. Arrrgh.
 ANTICAPTCHA_IPS = [
+		"*",
 		"69.65.41.21",
+		"78.46.86.231",
 		"209.212.146.168",
 	]
 
@@ -88,22 +92,26 @@ class AntiCaptchaSolver(object):
 		'''
 
 		proxy = SocksProxy.ProxyLauncher(ANTICAPTCHA_IPS)
+		self.log.info("Connection params: %s:%s", proxy.get_wan_ip(), proxy.get_wan_port())
+
+		# Wait for the port to be open and stuff. No idea why this seemed to be needed
+		self.log.info("Letting port forward stabilize.")
+		time.sleep(5)
 
 		try:
-			antiprox = python_anticaptcha.Proxy(
+			task = python_anticaptcha.NoCaptchaTask(
+					website_url    = page_url,
+					website_key    = google_key,
+					user_agent     = dict(self.wg.browserHeaders).get('User-Agent'),
+
 					proxy_type     = "socks5",
 					proxy_address  = proxy.get_wan_ip(),
 					proxy_port     = proxy.get_wan_port(),
 					proxy_login    = None,
 					proxy_password = None,
+
 				)
 
-			task = python_anticaptcha.NoCaptchaTask(
-					website_url = page_url,
-					website_key = google_key,
-					proxy       = antiprox,
-					user_agent  = dict(self.wg.browserHeaders).get('User-Agent')
-				)
 			job = self.client.createTask(task)
 			job.join(maximum_time = timeout)
 

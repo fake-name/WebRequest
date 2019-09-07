@@ -84,8 +84,9 @@ class WebGetRobust(
 
 	timeout = 30
 	errorOutCount = 1
+	retryDelay = 3
 	# retryDelay = 0.1
-	retryDelay = 0.01
+	# retryDelay = 0.01
 
 	data = None
 
@@ -893,7 +894,6 @@ class WebGetRobust(
 			except:
 				self.log.critical("And the URL could not be printed due to an encoding error")
 			self.log.error(pghandle)
-			time.sleep(self.retryDelay)
 
 		return False
 
