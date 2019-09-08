@@ -9,9 +9,8 @@ import asyncio
 import functools
 
 
-import pproxy
-import pproxy
 from . import socks5
+# import pproxy
 # from . import pysoxy
 # import pproxy.verbose
 
