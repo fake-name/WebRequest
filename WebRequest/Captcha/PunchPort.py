@@ -56,6 +56,7 @@ class UpnpHolePunch(object):
 		self.log = logging.getLogger("Main.WebRequest.Captcha.UPnP-Manager")
 
 		self.gateway_device = None
+		self.public = False
 
 		self.local_ip = self._get_local_ip()
 
@@ -65,6 +66,7 @@ class UpnpHolePunch(object):
 		self.is_public = not _is_private_ip(self.local_ip)
 
 		if self.is_public:
+			self.public = True
 			self.log.info("You seem to have a public IP address. No need to forward a port via UPnP")
 		else:
 			self.log.info("Your local IP is %s, which appears to be private. Looking for a UPnP Gateway.", self.local_ip)
@@ -112,6 +114,10 @@ class UpnpHolePunch(object):
 		return ret["NewExternalIPAddress"]
 
 	def open_port(self, remote_addresses, remote_port, local_port, duration=None):
+
+		if self.public:
+			return
+
 		# Idiot check
 		if not self.gateway_device:
 			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found.")
@@ -143,6 +149,9 @@ class UpnpHolePunch(object):
 
 
 	def close_port(self, remote_addresses, remote_port):
+		if self.public:
+			return
+
 		# Idiot check
 		if not self.gateway_device:
 			raise exc.CouldNotFindUpnpGateway("No UPnP Gateway found.")

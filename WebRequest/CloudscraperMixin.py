@@ -67,7 +67,7 @@ class WebGetCloudscraperMixin(object):
 			proxy = SocksProxy.ProxyLauncher(AntiCaptchaSolver.ANTICAPTCHA_IPS)
 			recaptcha_params = {
 					'provider': 'anticaptcha',
-					'api_key': 'your_anticaptcha_api_key',
+					'api_key': self.anticaptcha_api_key,
 
 					"user_agent"     : dict(self.wg.browserHeaders).get('User-Agent'),
 					"proxy_type"     : "socks5",
@@ -79,7 +79,7 @@ class WebGetCloudscraperMixin(object):
 			proxy = SocksProxy.ProxyLauncher([TwoCaptchaSolver.TWOCAPTCHA_IP])
 			recaptcha_params = {
 					'provider': 'anticaptcha',
-					'api_key': 'your_anticaptcha_api_key',
+					'api_key': self.twocaptcha_api_key,
 
 					'proxy'       : proxy.get_wan_address(),
 					'proxytype'   : "SOCKS5",
@@ -90,7 +90,6 @@ class WebGetCloudscraperMixin(object):
 			return None
 
 		try:
-
 			self.log.info("Connection params: %s:%s", proxy.get_wan_ip(), proxy.get_wan_port())
 
 			# Wait for the port to be open and stuff. No idea why this seemed to be needed
