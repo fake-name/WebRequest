@@ -45,9 +45,11 @@ class WebGetCloudscraperMixin(object):
 				return "Cloudflare reCaptcha detected"
 
 			self.log.error('"{}" returned an error. Could not collect tokens.'.format(url))
+			self.log.error('Returned exception: {}.'.format(str(e)))
 			for line in traceback.format_exc().split("\n"):
 				self.log.error(line)
 			return False
+
 		return False
 
 
@@ -57,6 +59,7 @@ class WebGetCloudscraperMixin(object):
 		ret = self._no_recaptcha_fetch(url)
 
 		if ret != "Cloudflare reCaptcha detected":
+			self.log.info("Cloudflare dealt with.")
 			return ret
 
 		recaptcha_params = {}
@@ -80,11 +83,10 @@ class WebGetCloudscraperMixin(object):
 
 					'proxy'       : proxy.get_wan_address(),
 					'proxytype'   : "SOCKS5",
-
-
 				}
 
 		else:
+			self.log.error("Cloudflare captcha and no captcha handlers!")
 			return None
 
 		try:
