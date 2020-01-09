@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import time
 import traceback
 import collections
 import cloudscraper
@@ -27,7 +28,7 @@ class WebGetCloudscraperMixin(object):
 		for cookie in scraper.cookies:
 			self.addCookie(cookie)
 
-	def no_recaptcha_fetch(self):
+	def _no_recaptcha_fetch(self, url):
 		normal_scraper = cloudscraper.create_scraper()
 
 		# Sync our headers.
@@ -53,7 +54,7 @@ class WebGetCloudscraperMixin(object):
 	def handle_cloudflare_cloudscraper(self, url):
 		self.log.info("Using cloudscraper to attempt to circumvent cloudflare.")
 
-		ret = self.no_recaptcha_fetch(url)
+		ret = self._no_recaptcha_fetch(url)
 
 		if ret != "Cloudflare reCaptcha detected":
 			return ret
@@ -63,10 +64,9 @@ class WebGetCloudscraperMixin(object):
 			proxy = SocksProxy.ProxyLauncher(AntiCaptchaSolver.ANTICAPTCHA_IPS)
 			recaptcha_params = {
 					'provider': 'anticaptcha',
-					'api_key': 'your_anticaptcha_api_key'
+					'api_key': 'your_anticaptcha_api_key',
 
 					"user_agent"     : dict(self.wg.browserHeaders).get('User-Agent'),
-
 					"proxy_type"     : "socks5",
 					"proxy_address"  : proxy.get_wan_ip(),
 					"proxy_port"     : proxy.get_wan_port(),
@@ -76,11 +76,10 @@ class WebGetCloudscraperMixin(object):
 			proxy = SocksProxy.ProxyLauncher([TwoCaptchaSolver.TWOCAPTCHA_IP])
 			recaptcha_params = {
 					'provider': 'anticaptcha',
-					'api_key': 'your_anticaptcha_api_key'
+					'api_key': 'your_anticaptcha_api_key',
 
-
-						'proxy'       : proxy.get_wan_address(),
-						'proxytype'   : "SOCKS5",
+					'proxy'       : proxy.get_wan_address(),
+					'proxytype'   : "SOCKS5",
 
 
 				}
@@ -96,7 +95,6 @@ class WebGetCloudscraperMixin(object):
 			self.log.info("Letting port forward stabilize.")
 			time.sleep(5)
 
-		try:
 			normal_scraper = cloudscraper.create_scraper(recaptcha=recaptcha_params)
 
 			# Sync our headers.
