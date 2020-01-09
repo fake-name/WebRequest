@@ -919,6 +919,10 @@ class WebGetRobust(
 		if b'is currently offline. However, because the site uses Cloudflare\'s Always Online' in pageContent:
 			raise Exceptions.CloudFlareWrapper("WAF Shit", pageUrl)
 
+		if b'"Completing the CAPTCHA proves you are a human and gives you temporary access to the web property."' in pageContent and \
+			b'__cf_chl_captcha_tk__' in pageContent:
+			raise Exceptions.CloudFlareWrapper("Captcha-Wrapped WAF Shit", pageUrl)
+
 	######################################################################################################################################################
 	######################################################################################################################################################
 
