@@ -14,6 +14,7 @@ import python_anticaptcha
 
 from .. import Exceptions as exc
 from . import SocksProxy
+from . import CaptchaSolverBase
 
 # This is hardcoded. Huh.
 # So UPnP /supports/ remote address filtering, despite most of the documentation
@@ -27,15 +28,9 @@ ANTICAPTCHA_IPS = [
 # Maybe use http://api.anti-captcha.com/getProxygateAddress for deriving these addresses in the future?
 
 
-class AntiCaptchaSolver(object):
-	def __init__(self, api_key, wg):
-		self.log      = logging.getLogger("Main.WebRequest.Captcha.AntiCaptcha")
+class AntiCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 
-		self.wg = wg
-		self.client = python_anticaptcha.AnticaptchaClient(api_key)
-
-		# Default timeout is 5 minutes.
-		self.waittime = 60 * 5
+	captcha_service_name = "AntiCaptcha"
 
 
 	def getbalance(self):
@@ -45,7 +40,7 @@ class AntiCaptchaSolver(object):
 		Returns value: balance (float), or raises an exception.
 		"""
 
-		return self.client.getBalance()
+		return float(self.client.getBalance())
 
 
 	def solve_simple_captcha(self, pathfile=None, filedata=None, filename=None):

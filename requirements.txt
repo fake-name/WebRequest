@@ -1,5 +1,5 @@
 
-ChromeController>=0.3.5
+ChromeController>=0.3.10
 beautifulsoup4>=4.6.0
 cchardet>=2.1.1
 lxml>=4.1.1
@@ -8,7 +8,7 @@ selenium
 chromedriver-binary
 
 # FFFuuuuu cloudflare
-cloudscraper
+cloudscraper>=1.2.18
 js2py
 
 # Sadface. So we need a socks client library, and a socks host

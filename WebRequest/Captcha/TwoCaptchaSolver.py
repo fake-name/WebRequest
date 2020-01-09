@@ -14,21 +14,16 @@ import requests
 from .. import Exceptions as exc
 
 from . import SocksProxy
+from . import CaptchaSolverBase
 
 # This is hardcoded. Huh.
 TWOCAPTCHA_IP = '138.201.188.166'
 
-class TwoCaptchaSolver(object):
-	def __init__(self, api_key, wg):
-		self.log      = logging.getLogger("Main.WebRequest.Captcha.2Captcha")
+class TwoCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 
-		self.api_key  = api_key
-		self.wg       = wg
+	captcha_service_name = "2Captcha"
 
-		# Default timeout is 5 minutes.
-		self.waittime = 60 * 5
-
-	def getUrlFor(self, mode, query_dict):
+	def _getUrlFor(self, mode, query_dict):
 
 		# query params for input mode
 		# Normal captcha solving
@@ -112,10 +107,10 @@ class TwoCaptchaSolver(object):
 		raise exc.CaptchaSolverFailure("Failure doing get request")
 
 
-	def doGet(self, mode, query_dict):
+	def _do_get(self, mode, query_dict):
 		query_dict['json'] = True
 
-		url = self.getUrlFor(mode, query_dict)
+		url = self._getUrlFor(mode, query_dict)
 
 		res = self.wg.getJson(url)
 
@@ -128,13 +123,13 @@ class TwoCaptchaSolver(object):
 		Returns value: balance (float), or raises an exception.
 		"""
 
-		balance = self.doGet('result', {
+		balance = self._do_get('result', {
 				'action' : 'getbalance',
 				'key'    : self.api_key,
 				'json'   : True,
 			})
 
-		return balance
+		return float(balance)
 
 
 	def _getresult(self, captcha_id, timeout=None):
@@ -165,7 +160,7 @@ class TwoCaptchaSolver(object):
 			time.sleep(poll_interval)
 
 			try:
-				resp = self.doGet('result', {
+				resp = self._do_get('result', {
 						'action' : 'get',
 						'key'    : self.api_key,
 						'json'   : True,
@@ -202,7 +197,7 @@ class TwoCaptchaSolver(object):
 
 		self.log.info("Uploading to 2Captcha.com.")
 
-		url = self.getUrlFor('input', {})
+		url = self._getUrlFor('input', {})
 
 		request = requests.post(url, files=files, data=payload)
 
@@ -240,7 +235,7 @@ class TwoCaptchaSolver(object):
 		proxy = SocksProxy.ProxyLauncher([TWOCAPTCHA_IP])
 
 		try:
-			captcha_id = self.doGet('input', {
+			captcha_id = self._do_get('input', {
 						'key'         : self.api_key,
 						'method'      : "userrecaptcha",
 						'googlekey'   : google_key,

@@ -101,9 +101,11 @@ class WebGetRobust(
 			use_socks     : bool                        = False,
 			alt_cookiejar : http.cookiejar.LWPCookieJar = None,
 			custom_ua     : dict                        = None,
+			*args,
+			**kwargs
 			):
 
-		super().__init__()
+		super().__init__(*args, **kwargs)
 
 		self.log = logging.getLogger(logPath)
 		# print("Webget init! Logpath = ", logPath)
