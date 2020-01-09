@@ -69,7 +69,7 @@ class WebGetCloudscraperMixin(object):
 					'provider': 'anticaptcha',
 					'api_key': self.anticaptcha_api_key,
 
-					"user_agent"     : dict(self.wg.browserHeaders).get('User-Agent'),
+					"user_agent"     : dict(self.browserHeaders).get('User-Agent'),
 					"proxy_type"     : "socks5",
 					"proxy_address"  : proxy.get_wan_ip(),
 					"proxy_port"     : proxy.get_wan_port(),
