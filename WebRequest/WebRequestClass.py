@@ -105,9 +105,10 @@ class WebGetRobust(
 			**kwargs
 			):
 
+		self.log = logging.getLogger(logPath)
+
 		super().__init__(*args, **kwargs)
 
-		self.log = logging.getLogger(logPath)
 
 		self.rules = {}
 		self.rules['auto_waf'] = cloudflare or auto_waf
