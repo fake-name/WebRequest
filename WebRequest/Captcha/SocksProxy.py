@@ -129,6 +129,12 @@ class ProxyLauncher(object):
 		# Close the port
 		self._close_local_port(self.listen_port, self.remote_ips)
 
+	def is_forwarded(self):
+		'''
+		If we're forwarded, we're not public
+		'''
+		return not self.prox.is_public()
+
 	def get_wan_address(self):
 		return "{}:{}".format(self.hole_puncher.get_wan_ip(), self.listen_port)
 

@@ -20,6 +20,17 @@ class WebGetCloudscraperMixin(object):
 
 		super().__init__(*args, **kwargs)
 
+		if twocaptcha_api_key:
+			self.log.info("Have API key for 2Captcha.com: %s", twocaptcha_api_key)
+		else:
+			self.log.info("No API key for 2Captcha.com")
+		if anticaptcha_api_key:
+			self.log.info("Have API key for Anti-Captcha.com: %s", anticaptcha_api_key)
+		else:
+			self.log.info("No API key for Anti-Captcha.com")
+
+
+
 		self.twocaptcha_api_key  = twocaptcha_api_key
 		self.anticaptcha_api_key = anticaptcha_api_key
 
@@ -62,6 +73,13 @@ class WebGetCloudscraperMixin(object):
 			self.log.info("Cloudflare dealt with.")
 			return ret
 
+
+		if self.twocaptcha_api_key:
+			self.log.info("handle_cloudflare_cloudscraper() -> Have API key for 2Captcha.com")
+		if self.anticaptcha_api_key:
+			self.log.info("handle_cloudflare_cloudscraper() -> Have API key for Anti-Captcha.com")
+
+
 		recaptcha_params = {}
 		if self.anticaptcha_api_key:
 			proxy = SocksProxy.ProxyLauncher(AntiCaptchaSolver.ANTICAPTCHA_IPS)
@@ -74,7 +92,6 @@ class WebGetCloudscraperMixin(object):
 					"proxy_address"  : proxy.get_wan_ip(),
 					"proxy_port"     : proxy.get_wan_port(),
 				}
-
 		elif self.twocaptcha_api_key:
 			proxy = SocksProxy.ProxyLauncher([TwoCaptchaSolver.TWOCAPTCHA_IP])
 			recaptcha_params = {
@@ -84,17 +101,20 @@ class WebGetCloudscraperMixin(object):
 					'proxy'       : proxy.get_wan_address(),
 					'proxytype'   : "SOCKS5",
 				}
-
 		else:
 			self.log.error("Cloudflare captcha and no captcha handlers!")
+			self.log.error("twocaptcha_api_key value: %s", self.twocaptcha_api_key)
+			self.log.error("anticaptcha_api_key value: %s", self.anticaptcha_api_key)
 			return None
+
 
 		try:
 			self.log.info("Connection params: %s:%s", proxy.get_wan_ip(), proxy.get_wan_port())
 
-			# Wait for the port to be open and stuff. No idea why this seemed to be needed
-			self.log.info("Letting port forward stabilize.")
-			time.sleep(5)
+			if proxy.is_forwarded():
+				# Wait for the port to be open and stuff. No idea why this seemed to be needed
+				self.log.info("Letting port forward stabilize.")
+				time.sleep(5)
 
 			self.log.info("Attempting to access site using CloudScraper with Captcha Handling.")
 			normal_scraper = cloudscraper.create_scraper(recaptcha=recaptcha_params)

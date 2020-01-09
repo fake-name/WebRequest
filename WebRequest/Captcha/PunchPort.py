@@ -63,9 +63,7 @@ class UpnpHolePunch(object):
 		if not self.local_ip:
 			raise exc.CouldNotDetermineLocalIp("Could not determine the local IP. Are you connected to the internet?")
 
-		self.is_public = not _is_private_ip(self.local_ip)
-
-		if self.is_public:
+		if not _is_private_ip(self.local_ip):
 			self.public = True
 			self.log.info("You seem to have a public IP address. No need to forward a port via UPnP")
 		else:
@@ -106,6 +104,9 @@ class UpnpHolePunch(object):
 			s.close()
 
 		return local_ip
+
+	def is_public(self):
+		return self.public
 
 	def get_wan_ip(self):
 		if self.public:
