@@ -108,6 +108,9 @@ class UpnpHolePunch(object):
 		return local_ip
 
 	def get_wan_ip(self):
+		if self.public:
+			return self.local_ip
+
 		ret = self.gateway_device.WANIPConn1.GetExternalIPAddress()
 		if not "NewExternalIPAddress" in ret:
 			raise exc.CouldNotDetermineWanIp("No wan IP address found on gateway. What?")

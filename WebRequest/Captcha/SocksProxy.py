@@ -134,6 +134,7 @@ class ProxyLauncher(object):
 
 	def get_wan_ip(self):
 		return "{}".format(self.hole_puncher.get_wan_ip())
+
 	def get_wan_port(self):
 		return "{}".format(self.listen_port)
 
