@@ -96,6 +96,7 @@ class WebGetCloudscraperMixin(object):
 			self.log.info("Letting port forward stabilize.")
 			time.sleep(5)
 
+			self.log.info("Attempting to access site using CloudScraper with Captcha Handling.")
 			normal_scraper = cloudscraper.create_scraper(recaptcha=recaptcha_params)
 
 			# Sync our headers.
