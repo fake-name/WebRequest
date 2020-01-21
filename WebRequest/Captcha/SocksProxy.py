@@ -133,7 +133,7 @@ class ProxyLauncher(object):
 		'''
 		If we're forwarded, we're not public
 		'''
-		return not self.prox.is_public()
+		return not self.hole_puncher.is_public()
 
 	def get_wan_address(self):
 		return "{}:{}".format(self.hole_puncher.get_wan_ip(), self.listen_port)

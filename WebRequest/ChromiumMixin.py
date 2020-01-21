@@ -57,6 +57,7 @@ class WebGetCrMixin(object):
 		self.wrapper_step_through_timeout = 20
 
 		if use_global_tab_pool:
+			self.log.info("Using global chromium tab pool")
 			self.borg_chrome_pool = True
 		else:
 			self.borg_chrome_pool = None

@@ -34,6 +34,12 @@ class WebGetCloudscraperMixin(object):
 		self.twocaptcha_api_key  = twocaptcha_api_key
 		self.anticaptcha_api_key = anticaptcha_api_key
 
+	def set_twocaptcha_api_key(self, api_key):
+		self.twocaptcha_api_key  = api_key
+
+	def set_anticaptcha_api_key(self, api_key):
+		self.anticaptcha_api_key  = api_key
+
 
 	def extract_cloudscrape_resp_cookies(self, scraper, resp):
 		for cookie in scraper.cookies:
