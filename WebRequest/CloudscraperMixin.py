@@ -22,12 +22,9 @@ class WebGetCloudscraperMixin(object):
 
 		if twocaptcha_api_key:
 			self.log.info("Have API key for 2Captcha.com: %s", twocaptcha_api_key)
-		else:
-			self.log.info("No API key for 2Captcha.com")
+
 		if anticaptcha_api_key:
 			self.log.info("Have API key for Anti-Captcha.com: %s", anticaptcha_api_key)
-		else:
-			self.log.info("No API key for Anti-Captcha.com")
 
 
 
@@ -35,9 +32,11 @@ class WebGetCloudscraperMixin(object):
 		self.anticaptcha_api_key = anticaptcha_api_key
 
 	def set_twocaptcha_api_key(self, api_key):
+		self.log.info("Setting API key for 2Captcha.com: %s", api_key)
 		self.twocaptcha_api_key  = api_key
 
 	def set_anticaptcha_api_key(self, api_key):
+		self.log.info("Setting API key for Anti-Captcha.com: %s", api_key)
 		self.anticaptcha_api_key  = api_key
 
 
