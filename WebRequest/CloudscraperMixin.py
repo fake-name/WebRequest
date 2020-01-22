@@ -3,11 +3,50 @@
 import time
 import traceback
 import collections
+import sys
 import cloudscraper
 
 from .Captcha import SocksProxy
 from .Captcha import AntiCaptchaSolver
 from .Captcha import TwoCaptchaSolver
+
+from python_anticaptcha import AnticaptchaClient, NoCaptchaTask
+from cloudscraper.reCaptcha import reCaptcha
+
+
+
+class proxyCaptchaSolver(reCaptcha):
+
+	def __init__(self):
+		super(proxyCaptchaSolver, self).__init__('proxyanticaptcha')
+
+	def getCaptchaAnswer(self, site_url, site_key, reCaptchaParams):
+		if not reCaptchaParams.get('api_key'):
+			raise ValueError("reCaptcha provider 'anticaptcha' was not provided an 'api_key' parameter.")
+
+		client = AnticaptchaClient(reCaptchaParams.get('api_key'))
+
+		task = NoCaptchaTask(
+					website_url    = site_url,
+					website_key    = site_key,
+					user_agent     = reCaptchaParams['user_agent'],
+
+					proxy_type     = "socks5",
+					proxy_address  = reCaptchaParams['proxy_address'],
+					proxy_port     = reCaptchaParams['proxy_port'],
+					proxy_login    = None,
+					proxy_password = None,
+			)
+
+		if not hasattr(client, 'createTaskSmee'):
+			sys.tracebacklimit = 0
+			raise RuntimeError("Please upgrade 'python_anticaptcha' via pip or download it from https://github.com/ad-m/python-anticaptcha")
+
+		job = client.createTaskSmee(task)
+		return job.get_solution_response()
+
+
+proxyCaptchaSolver()
 
 class WebGetCloudscraperMixin(object):
 
@@ -89,7 +128,7 @@ class WebGetCloudscraperMixin(object):
 		if self.anticaptcha_api_key:
 			proxy = SocksProxy.ProxyLauncher(AntiCaptchaSolver.ANTICAPTCHA_IPS)
 			recaptcha_params = {
-					'provider': 'anticaptcha',
+					'provider': 'proxyanticaptcha',
 					'api_key': self.anticaptcha_api_key,
 
 					"user_agent"     : dict(self.browserHeaders).get('User-Agent'),

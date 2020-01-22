@@ -16,12 +16,12 @@
 
 set -e
 
-# nosetests                      \
-# 	--with-coverage            \
-# 	--exe                      \
-# 	--cover-package=WebRequest \
-# 	--stop                     \
-# 	tests.test_chromium
+nosetests                      \
+	--with-coverage            \
+	--exe                      \
+	--cover-package=WebRequest \
+	tests
+	# --stop                     \
 
 # nosetests                      \
 # 	--with-coverage            \
@@ -48,14 +48,15 @@ set -e
 # 	--nocapture                \
 # 	tests.test_waf_bullshit.TestWafPokeThrough
 
-nosetests                      \
-	--with-coverage            \
-	--exe                      \
-	--cover-package=WebRequest \
-	tests
+# nosetests                      \
+# 	--with-coverage            \
+# 	--exe                      \
+# 	--cover-package=WebRequest \
+# 	tests.test_chromium.TestChromiumPooled
 
 	# --stop                     \
-	# tests.test_chromium.TestChromiumPooled
+
+	# tests
 	# --nocapture                \
 	# tests.test_waf_bullshit.TestPreemptiveWrapper
 

@@ -41,6 +41,23 @@ class ChromiumBorg(object):
 	def get(self):
 		return self.__cr
 
+	def close(self):
+		if self.__initialized:
+			self.__cr.close()
+			self.__initialized = False
+
+class ChromiumSingle(object):
+	def __init__(self, chrome_binary):
+		self.__cr = ChromeController.TabPooledChromium(binary=chrome_binary, tab_pool_max_size=5)
+		self.__initialized = True
+
+	def get(self):
+		return self.__cr
+
+	def close(self):
+		if self.__initialized:
+			self.__cr.close()
+			self.__initialized = False
 
 class WebGetCrMixin(object):
 	# creds is a list of 3-tuples that gets inserted into the password manager.
@@ -56,23 +73,26 @@ class WebGetCrMixin(object):
 		self.navigate_timeout_secs = 10
 		self.wrapper_step_through_timeout = 20
 
+		self.use_global_tab_pool = use_global_tab_pool
+
 		if use_global_tab_pool:
 			self.log.info("Using global chromium tab pool")
-			self.borg_chrome_pool = True
-		else:
-			self.borg_chrome_pool = None
 
+		self.chrome_pool = None
 
 	def _chrome_context(self, itemUrl:str, extra_tid):
-		if self.borg_chrome_pool and self.borg_chrome_pool is True:
-			self.log.info("Initializing chromium pool on first use!")
-			self.borg_chrome_pool = ChromiumBorg(chrome_binary=self._cr_binary)
+		if not self.chrome_pool:
+			if self.use_global_tab_pool:
+				self.log.info("Initializing chromium pool on first use!")
+				self.chrome_pool = ChromiumBorg(chrome_binary=self._cr_binary)
+			else:
+				self.chrome_pool = ChromiumSingle(chrome_binary=self._cr_binary)
 
-		if self.borg_chrome_pool:
-			assert itemUrl is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
-			return self.borg_chrome_pool.get().tab(url=itemUrl, extra_id=extra_tid)
-		else:
-			return ChromeController.ChromeContext(binary=self._cr_binary)
+
+
+		assert itemUrl is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
+		return self.chrome_pool.get().tab(url=itemUrl, extra_id=extra_tid)
+
 
 	def _syncIntoChromium(self, cr):
 		self.log.info("Syncing cookies into chromium")
@@ -296,3 +316,13 @@ class WebGetCrMixin(object):
 			extra_tid = threading.get_ident()
 
 		return self._chrome_context(url, extra_tid=extra_tid)
+
+	def close_chromium(self):
+		'''
+		If a chromium tab pool is open, close it.
+		Note that if you're using a shared tab pool, this will cause accesses to
+		other shared instances of the tab pool to potentially fail with exceptions..
+		'''
+		if self.chrome_pool:
+			self.chrome_pool.close()
+			self.chrome_pool = None
