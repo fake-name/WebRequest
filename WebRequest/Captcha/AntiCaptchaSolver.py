@@ -32,6 +32,17 @@ class AntiCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 
 	captcha_service_name = "AntiCaptcha"
 
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		self.__client = None
+
+	@property
+	def client(self):
+		if self.__client is None:
+			self.__client = python_anticaptcha.AnticaptchaClient(self._get_api_key())
+
+		return self.__client
 
 	def getbalance(self):
 		"""
@@ -155,12 +166,10 @@ def test():
 	import WebRequest
 
 	wg = WebRequest.WebGetRobust()
-
 	solver = AntiCaptchaSolver(api_key=test_settings.ANTICAPTCHA_API_KEY, wg=wg)
 
 	print(solver)
-
-	# print("Credits: ", solver.getbalance())
+	print("Credits: ", solver.getbalance())
 
 	# res = solver.solve_simple_captcha(pathfile='/media/Storage/Scripts/xaDownloader/img.jpg')
 
@@ -170,7 +179,7 @@ def test():
 
 
 if __name__ == '__main__':
-	recaptcha_test()
-	# test()
+	# recaptcha_test()
+	test()
 
 

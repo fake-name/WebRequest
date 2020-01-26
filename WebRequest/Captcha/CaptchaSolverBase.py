@@ -19,12 +19,14 @@ class CaptchaSolverBase(metaclass=abc.ABCMeta):
 	def __init__(self, api_key, wg):
 		self.log      = logging.getLogger("Main.WebRequest.Captcha.{}".format(self.captcha_service_name))
 
-		self.api_key  = api_key
+		self.__api_key  = api_key
 		self.wg       = wg
 
 		# Default timeout is 5 minutes.
 		self.waittime = 60 * 5
 
+	def _get_api_key(self):
+		return self.__api_key
 
 	@abc.abstractmethod
 	def getbalance(self):

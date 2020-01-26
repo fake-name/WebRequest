@@ -14,7 +14,7 @@ setuptools.setup(
 	name="WebRequest",
 
 	# Version number (initial):
-	version="0.0.68",
+	version="0.0.70",
 
 	# Application author details:
 	author="Connor Wolf",
@@ -38,4 +38,11 @@ setuptools.setup(
 
 	# Dependent packages (distributions)
 	install_requires=req_file("requirements.txt"),
+
+	classifiers                   = [
+		"Programming Language :: Python :: 3",
+		"Development Status :: 4 - Beta",
+		"Intended Audience :: Developers",
+		"Operating System :: POSIX :: Linux",
+	],
 )
