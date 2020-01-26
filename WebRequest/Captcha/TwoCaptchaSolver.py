@@ -125,7 +125,7 @@ class TwoCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 
 		balance = self._do_get('result', {
 				'action' : 'getbalance',
-				'key'    : self.api_key,
+				'key'    : self._get_api_key(),
 				'json'   : True,
 			})
 
@@ -162,7 +162,7 @@ class TwoCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 			try:
 				resp = self._do_get('result', {
 						'action' : 'get',
-						'key'    : self.api_key,
+						'key'    : self._get_api_key(),
 						'json'   : True,
 						'id'     : captcha_id,
 					}
@@ -190,7 +190,7 @@ class TwoCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 			raise ValueError("You must pass either a valid file path, or a bytes array containing the captcha image!")
 
 		payload = {
-			'key'    : self.api_key,
+			'key'    : self._get_api_key(),
 			'method' : 'post',
 			'json'   : True,
 			}
@@ -236,7 +236,7 @@ class TwoCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 
 		try:
 			captcha_id = self._do_get('input', {
-						'key'         : self.api_key,
+						'key'         : self._get_api_key(),
 						'method'      : "userrecaptcha",
 						'googlekey'   : google_key,
 						'pageurl'     : page_url,
