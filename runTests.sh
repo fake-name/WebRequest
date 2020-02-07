@@ -20,8 +20,8 @@ nosetests                      \
 	--with-coverage            \
 	--exe                      \
 	--cover-package=WebRequest \
+	--stop                     \
 	tests
-	# --stop                     \
 
 # nosetests                      \
 # 	--with-coverage            \

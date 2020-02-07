@@ -24,21 +24,31 @@ def _cr_context(cls):
 
 # Share the same chrome instance across multiple threads
 class ChromiumBorg(object):
-	__shared_state = {}
+	__shared_state = {
+		'_cr_binary' : None,
+	}
+
 	# init internal state variables here
 	__initialized = False
+	_cr_binary    = None
 
-	def _init_default_register(self, chrome_binary):
+	def _init_chromium_instance(self, chrome_binary):
 		# Current runners are configured to use 10 threads.
 		self.__cr = ChromeController.TabPooledChromium(binary=chrome_binary, tab_pool_max_size=10)
 		self.__initialized = True
 
 	def __init__(self, chrome_binary):
 		self.__dict__ = self.__shared_state
+
+		if self._cr_binary != chrome_binary:
+			self._cr_binary = chrome_binary
+
 		if not self.__initialized:
-			self._init_default_register(chrome_binary)
+			self._init_chromium_instance(chrome_binary)
 
 	def get(self):
+		if not self.__initialized:
+			self._init_chromium_instance()
 		return self.__cr
 
 	def close(self):
@@ -48,10 +58,20 @@ class ChromiumBorg(object):
 
 class ChromiumSingle(object):
 	def __init__(self, chrome_binary):
-		self.__cr = ChromeController.TabPooledChromium(binary=chrome_binary, tab_pool_max_size=5)
+		self.__bin_name    = chrome_binary
+		self.__initialized = False
+		self.__cr          = None
+
+
+	def _init_chromium_instance(self):
+		# Current runners are configured to use 10 threads.
+		self.__cr = ChromeController.TabPooledChromium(binary=self.__bin_name, tab_pool_max_size=5)
 		self.__initialized = True
 
 	def get(self):
+		if not self.__initialized:
+			self._init_chromium_instance()
+
 		return self.__cr
 
 	def close(self):
@@ -114,6 +134,8 @@ class WebGetCrMixin(object):
 
 	def comprehensiveGetItemChromium(self, url, referrer=None, extra_tid=False, title_timeout=None, need_rendered=False):
 
+		assert url, "You have to pass a url!"
+
 		if title_timeout is None:
 			title_timeout = 1
 		if extra_tid is True:
@@ -122,7 +144,7 @@ class WebGetCrMixin(object):
 		ret = {}
 
 
-		with self._chrome_context(url, extra_tid=extra_tid) as cr:
+		with self._chrome_context(itemUrl=url, extra_tid=extra_tid) as cr:
 			# print("Starting nav (%s)" % need_rendered)
 			self._syncIntoChromium(cr)
 
@@ -272,6 +294,8 @@ class WebGetCrMixin(object):
 		if titleContains and titleNotContains:
 			raise ValueError("You can only pass a single conditional statement!")
 
+		assert url, "You have to pass a url!"
+
 		self.log.info("Attempting to access page through WAF browser verification.")
 
 		current_title = None
@@ -279,7 +303,7 @@ class WebGetCrMixin(object):
 		if extra_tid is True:
 			extra_tid = threading.get_ident()
 
-		with self._chrome_context(url, extra_tid=extra_tid) as cr:
+		with self._chrome_context(itemUrl=url, extra_tid=extra_tid) as cr:
 			self._syncIntoChromium(cr)
 			cr.blocking_navigate(url)
 
@@ -315,7 +339,7 @@ class WebGetCrMixin(object):
 		if extra_tid is True:
 			extra_tid = threading.get_ident()
 
-		return self._chrome_context(url, extra_tid=extra_tid)
+		return self._chrome_context(itemUrl=url, extra_tid=extra_tid)
 
 	def close_chromium(self):
 		'''
