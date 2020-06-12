@@ -86,32 +86,6 @@ class TestPlainWafPokeThrough(unittest.TestCase):
 
 
 
-class TestSeleniumGarbageWafPokeThrough(unittest.TestCase):
-	def setUp(self):
-
-		self.wg = WebRequest.WebGetRobust()
-		self.wg.clearCookies()
-		# Configure mock server.
-		self.mock_server_port, self.mock_server, self.mock_server_thread = testing_server.start_server(self, self.wg, is_selenium_garbage_chromium=True)
-
-	def tearDown(self):
-		self.mock_server.shutdown()
-		self.mock_server_thread.join()
-		self.wg = None
-
-	def test_cloudflare_selenium_chromium(self):
-		stepped_through = self.wg.stepThroughJsWaf_selenium_chromium("http://127.0.0.1:{}/cloudflare_under_attack_shit".format(self.mock_server_port), titleNotContains='Just a moment...')
-		self.assertEqual(stepped_through, True)
-
-	def test_cloudflare_selenium_chromium_2(self):
-		stepped_through = self.wg.stepThroughJsWaf_selenium_chromium("http://127.0.0.1:{}/cloudflare_under_attack_shit_2".format(self.mock_server_port), titleNotContains='Just a moment...')
-		self.assertEqual(stepped_through, True)
-
-	def test_sucuri_selenium_chromium(self):
-		stepped_through = self.wg.stepThroughJsWaf_selenium_chromium("http://127.0.0.1:{}/sucuri_shit".format(self.mock_server_port), titleNotContains="You are being redirected...")
-		self.assertEqual(stepped_through, True)
-
-
 class TestChromiumPokeThrough(unittest.TestCase):
 	def setUp(self):
 

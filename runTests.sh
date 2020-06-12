@@ -20,8 +20,10 @@ nosetests                      \
 	--with-coverage            \
 	--exe                      \
 	--cover-package=WebRequest \
-	--stop                     \
 	tests
+	# tests.test_selenium
+	# tests.test_simple
+	# --stop                     \
 
 # nosetests                      \
 # 	--with-coverage            \
@@ -66,7 +68,6 @@ nosetests                      \
 	# tests.test_selenium
 
 coverage report --show-missing
-
 coverage erase
 
 

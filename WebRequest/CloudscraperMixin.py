@@ -4,14 +4,18 @@ import time
 import traceback
 import collections
 import sys
+import datetime
+
 import cloudscraper
+import requests
+import requests.structures
+from python_anticaptcha import AnticaptchaClient, NoCaptchaTask
+from cloudscraper.reCaptcha import reCaptcha
 
 from .Captcha import SocksProxy
 from .Captcha import AntiCaptchaSolver
 from .Captcha import TwoCaptchaSolver
 
-from python_anticaptcha import AnticaptchaClient, NoCaptchaTask
-from cloudscraper.reCaptcha import reCaptcha
 
 
 
@@ -47,6 +51,61 @@ class proxyCaptchaSolver(reCaptcha):
 
 
 proxyCaptchaSolver()
+
+
+class CloudScraperWrapper(cloudscraper.CloudScraper):
+	def __init__(self, wg, *args, **kwargs):
+		super(CloudScraperWrapper, self).__init__(*args, **kwargs)
+
+		self.wg = wg
+
+
+
+
+		# ------------------------------------------------------------------------------- #
+		# Make the request via requests.
+		# ------------------------------------------------------------------------------- #
+
+
+	def perform_request(self, method, url, *args, **kwargs):
+		assert args == (), "Args not empty! Value: %s" % (args, )
+
+		if 'data' in kwargs and method != 'POST':
+			raise RuntimeError("Do not know how to handle post without data to post!")
+		# args seems to not be used
+		# Possible kwargs:
+		#     allow_redirects
+		#     data
+		#     headers
+		#     proxies
+
+
+		print("perform_request")
+		print("method", method)
+		print("url", url)
+		print("args", args)
+		print("kwargs", kwargs)
+		ret =  super(CloudScraper, self).request(method, url, *args, **kwargs)
+
+
+		resp = requests.Response()
+
+		resp._content = ""
+		resp._content_consumed = True
+		resp.status_code = None
+		resp.headers = requests.structures.CaseInsensitiveDict()
+		resp.raw = None
+		resp.url = None
+		resp.encoding = None
+		resp.history = []
+		resp.reason = None
+		resp.elapsed = datetime.timedelta(0)
+		resp.request = None
+
+
+		return ret
+
+
 
 class WebGetCloudscraperMixin(object):
 
@@ -84,7 +143,9 @@ class WebGetCloudscraperMixin(object):
 			self.addCookie(cookie)
 
 	def _no_recaptcha_fetch(self, url):
-		normal_scraper = cloudscraper.create_scraper()
+		normal_scraper = CloudScraperWrapper(
+				wg = self,
+			)
 
 		# Sync our headers.
 		normal_scraper.headers = collections.OrderedDict(self.browserHeaders)
@@ -117,9 +178,9 @@ class WebGetCloudscraperMixin(object):
 			self.log.info("Cloudflare dealt with.")
 			return ret
 
-
 		if self.twocaptcha_api_key:
 			self.log.info("handle_cloudflare_cloudscraper() -> Have API key for 2Captcha.com")
+
 		if self.anticaptcha_api_key:
 			self.log.info("handle_cloudflare_cloudscraper() -> Have API key for Anti-Captcha.com")
 
@@ -161,7 +222,10 @@ class WebGetCloudscraperMixin(object):
 				time.sleep(5)
 
 			self.log.info("Attempting to access site using CloudScraper with Captcha Handling.")
-			normal_scraper = cloudscraper.create_scraper(recaptcha=recaptcha_params)
+			normal_scraper = CloudScraperWrapper(
+				wg        = self,
+				recaptcha = recaptcha_params,
+				)
 
 			# Sync our headers.
 			normal_scraper.headers = collections.OrderedDict(self.browserHeaders)
@@ -176,7 +240,6 @@ class WebGetCloudscraperMixin(object):
 			for line in traceback.format_exc().split("\n"):
 				self.log.error(line)
 			return False
-
 
 
 		finally:

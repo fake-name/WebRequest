@@ -314,10 +314,10 @@ class WebGetRobust(
 		the last section of the url path segment is treated as the filename.
 		'''
 
-		pgctnt, hName, mime = self.getFileNameMime(*args, **kwargs)
+		pgctnt, hName, _, _ = self.getFileNameMimeUrl(*args, **kwargs)
 		return pgctnt, hName
 
-	def getFileNameMime(self, requestedUrl:str, *args, **kwargs):
+	def getFileNameMime(self, *args, **kwargs):
 		'''
 		Give a requested page (note: the arguments for this call are forwarded to getpage()),
 		return the content at the target URL, the filename for the target content, and
@@ -328,6 +328,20 @@ class WebGetRobust(
 		'''
 
 
+		pgctnt, hName, mime, _ = self.getFileNameMimeUrl(*args, **kwargs)
+
+		return pgctnt, hName, mime
+
+
+	def getFileNameMimeUrl(self, requestedUrl:str, *args, **kwargs):
+		'''
+		Give a requested page (note: the arguments for this call are forwarded to getpage()),
+		return the content at the target URL, the filename for the target content, and
+		the mimetype for the content at the target URL, as a 4-tuple (pgctnt, hName, mime, resolved_url).
+
+		The filename specified in the content-disposition header is used, if present. Otherwise,
+		the last section of the url path segment is treated as the filename.
+		'''
 
 		if 'returnMultiple' in kwargs:
 			raise Exceptions.ArgumentError("getFileAndName cannot be called with 'returnMultiple'", requestedUrl)
@@ -359,7 +373,7 @@ class WebGetRobust(
 		if "/" in hName:
 			hName = hName.split("/")[-1]
 
-		return pgctnt, hName, mime
+		return pgctnt, hName, mime, requestedUrl
 
 
 
@@ -1113,8 +1127,8 @@ class WebGetRobust(
 
 
 	def stepThroughCloudFlareWaf(self, url:str):
-		# return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
-		return self.handle_cloudflare_cloudscraper(url)
+		# return self.handle_cloudflare_cloudscraper(url)
+		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
 
 	def stepThroughSucuriWaf(self, url:str):
 		return self.stepThroughJsWaf(url, titleNotContains="You are being redirected...")
@@ -1132,9 +1146,4 @@ class WebGetRobust(
 class PlainWafWebGetRobust(WebGetRobust):
 	def stepThroughCloudFlareWaf(self, url:str):
 		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
-
-
-if __name__ == '__main__':
-	cs = WebGetRobust()
-	cs.handle_cloudflare_cloudscraper("https://www.cloudflare.com/")
 

@@ -15,13 +15,6 @@ import bs4
 
 import ChromeController
 
-@contextlib.contextmanager
-def _cr_context(cls):
-	with ChromeController.ChromeContext(cls._cr_binary) as cr:
-		cls._syncIntoChromium(cr)
-		yield cr
-		cls._syncOutOfChromium(cr)
-
 # Share the same chrome instance across multiple threads
 class ChromiumBorg(object):
 	__shared_state = {
@@ -90,8 +83,8 @@ class WebGetCrMixin(object):
 
 		super().__init__(*args, **kwargs)
 
-		self.navigate_timeout_secs = 10
-		self.wrapper_step_through_timeout = 20
+		self.navigate_timeout_secs = 15
+		self.wrapper_step_through_timeout = 60
 
 		self.use_global_tab_pool = use_global_tab_pool
 
@@ -112,6 +105,20 @@ class WebGetCrMixin(object):
 
 		assert itemUrl is not None, "You need to pass a URL to the contextmanager, so it can dispatch to the correct tab!"
 		return self.chrome_pool.get().tab(url=itemUrl, extra_id=extra_tid)
+
+	@contextlib.contextmanager
+	def chrome_tab_context(self, url, extra_tid=None):
+		with self._chrome_context(url, extra_tid) as cr:
+
+			# If the tab has JS stopped, resume it
+			cr.Emulation_setScriptExecutionDisabled(False)
+
+			self._syncIntoChromium(cr)
+			yield cr
+			self._syncOutOfChromium(cr)
+
+			# Disable JS in the tab so it doesn't consume resources
+			cr.Emulation_setScriptExecutionDisabled(True)
 
 
 	def _syncIntoChromium(self, cr):
@@ -146,6 +153,8 @@ class WebGetCrMixin(object):
 
 		with self._chrome_context(itemUrl=url, extra_tid=extra_tid) as cr:
 			# print("Starting nav (%s)" % need_rendered)
+
+			cr.Emulation_setScriptExecutionDisabled(False)
 			self._syncIntoChromium(cr)
 
 			################################################################################################
@@ -200,6 +209,8 @@ class WebGetCrMixin(object):
 				ret['resolved_content'] = cr.get_rendered_page_source()
 
 			self._syncOutOfChromium(cr)
+
+			cr.Emulation_setScriptExecutionDisabled(True)
 			# print("Done")
 
 		self.log.info("Chromium fetch complete.")
@@ -304,6 +315,7 @@ class WebGetCrMixin(object):
 			extra_tid = threading.get_ident()
 
 		with self._chrome_context(itemUrl=url, extra_tid=extra_tid) as cr:
+			cr.Emulation_setScriptExecutionDisabled(False)
 			self._syncIntoChromium(cr)
 			cr.blocking_navigate(url)
 
@@ -318,6 +330,7 @@ class WebGetCrMixin(object):
 					return True
 
 			self._syncOutOfChromium(cr)
+			cr.Emulation_setScriptExecutionDisabled(True)
 
 		self.log.error("Failed to step through. Current title: '%s'", current_title)
 
