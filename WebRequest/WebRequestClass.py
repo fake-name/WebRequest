@@ -933,8 +933,7 @@ class WebGetRobust(
 		if b'is currently offline. However, because the site uses Cloudflare\'s Always Online' in pageContent:
 			raise Exceptions.CloudFlareWrapper("WAF Shit", pageUrl)
 
-		if b'Completing the CAPTCHA proves you are a human and gives you temporary access to the web property.' in pageContent and \
-			b'__cf_chl_captcha_tk__' in pageContent:
+		if b'Completing the CAPTCHA proves you are a human and gives you temporary access to the web property.' in pageContent:
 			raise Exceptions.CloudFlareWrapper("Captcha-Wrapped WAF Shit", pageUrl)
 
 	######################################################################################################################################################
@@ -1127,8 +1126,8 @@ class WebGetRobust(
 
 
 	def stepThroughCloudFlareWaf(self, url:str):
-		# return self.handle_cloudflare_cloudscraper(url)
-		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
+		return self.handle_cloudflare_cloudscraper(url)
+		# return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
 
 	def stepThroughSucuriWaf(self, url:str):
 		return self.stepThroughJsWaf(url, titleNotContains="You are being redirected...")

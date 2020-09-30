@@ -27,14 +27,17 @@ class ChromiumBorg(object):
 
 	def _init_chromium_instance(self, chrome_binary):
 		# Current runners are configured to use 10 threads.
-		self.__cr = ChromeController.TabPooledChromium(binary=chrome_binary, tab_pool_max_size=10)
+		self.__cr = ChromeController.TabPooledChromium(binary=chrome_binary, tab_pool_max_size=10, *self._args, **self._kwargs)
 		self.__initialized = True
 
-	def __init__(self, chrome_binary):
+	def __init__(self, chrome_binary, *args, **kwargs):
 		self.__dict__ = self.__shared_state
 
 		if self._cr_binary != chrome_binary:
 			self._cr_binary = chrome_binary
+
+		self._args   = args
+		self._kwargs = kwargs
 
 		if not self.__initialized:
 			self._init_chromium_instance(chrome_binary)
@@ -50,15 +53,17 @@ class ChromiumBorg(object):
 			self.__initialized = False
 
 class ChromiumSingle(object):
-	def __init__(self, chrome_binary):
+	def __init__(self, chrome_binary, *args, **kwargs):
 		self.__bin_name    = chrome_binary
 		self.__initialized = False
 		self.__cr          = None
+		self._args         = args
+		self._kwargs       = kwargs
 
 
 	def _init_chromium_instance(self):
 		# Current runners are configured to use 10 threads.
-		self.__cr = ChromeController.TabPooledChromium(binary=self.__bin_name, tab_pool_max_size=5)
+		self.__cr = ChromeController.TabPooledChromium(binary=self.__bin_name, tab_pool_max_size=5, *self._args, **self._kwargs)
 		self.__initialized = True
 
 	def get(self):
@@ -76,15 +81,45 @@ class WebGetCrMixin(object):
 	# creds is a list of 3-tuples that gets inserted into the password manager.
 	# it is structured [(top_level_url1, username1, password1), (top_level_url2, username2, password2)]
 	def __init__(self, use_global_tab_pool=True, *args, **kwargs):
-		if "chromium-binary" in kwargs:
-			self._cr_binary = kwargs.pop("chrome-binary")
+		'''
+		This adds a few chromium-related feature flags, and a management feature flag:
+
+		use_global_tab_pool - (default: True).
+			Specify whether multiple threads will share access to the same chrome instance.
+			Note that multiple threads can access multiple tabs at the same time without
+			issue. global tab management is serialized via locks.
+			This will (probably) fail in interesting ways if used in a multiprocessing context.
+		chromium_binary - (default: 'google-chrome')
+			Override the executed binary name. Defaults to `google-chrome` on $PATH.
+		chromium_headless - (default: True)
+			Should chromium be run in headless mode (e.g. `--headless` command line flag).
+			Running chrome with a head can be handy for debugging or dealing with particularly
+			obnoxious websites (since you can pause your code, interact with the browser, and
+			resume). This also allows plugins to operate (Plugins are not operative in headless
+			chrome).
+		chromium_enable_gpu - (default: False)
+			Should chromium be run without GPU support. This translates to the `--disable-gpu`
+			command line flag being passed if it is not set to True.
+			Primarily, this is for contexts where you may not have a GPU (VPSes, etc...).
+		'''
+		if "chromium_binary" in kwargs:
+			self._cr_binary = kwargs.pop("chromium_binary")
 		else:
 			self._cr_binary = "google-chrome"
+		if "chromium_headless" in kwargs:
+			self._cr_headless = kwargs.pop("chromium_headless")
+		else:
+			self._cr_headless = True
+
+		if "chromium_enable_gpu" in kwargs:
+			self._cr_enable_gpu = kwargs.pop("chromium_enable_gpu")
+		else:
+			self._cr_enable_gpu = False
 
 		super().__init__(*args, **kwargs)
 
 		self.navigate_timeout_secs = 15
-		self.wrapper_step_through_timeout = 60
+		self.wrapper_step_through_timeout = 60 * 5
 
 		self.use_global_tab_pool = use_global_tab_pool
 
@@ -97,9 +132,17 @@ class WebGetCrMixin(object):
 		if not self.chrome_pool:
 			if self.use_global_tab_pool:
 				self.log.info("Initializing chromium pool on first use!")
-				self.chrome_pool = ChromiumBorg(chrome_binary=self._cr_binary)
+				self.chrome_pool = ChromiumBorg(
+						chrome_binary = self._cr_binary,
+						enable_gpu    = self._cr_enable_gpu,
+						headless      = self._cr_headless,
+					)
 			else:
-				self.chrome_pool = ChromiumSingle(chrome_binary=self._cr_binary)
+				self.chrome_pool = ChromiumSingle(
+						chrome_binary = self._cr_binary,
+						enable_gpu    = self._cr_enable_gpu,
+						headless      = self._cr_headless,
+					)
 
 
 

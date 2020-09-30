@@ -134,6 +134,50 @@ class AntiCaptchaSolver(CaptchaSolverBase.CaptchaSolverBase):
 		finally:
 			proxy.stop()
 
+	def solve_hcaptcha(self, website_key, page_url, timeout = 15 * 60):
+		'''
+		Solve a hcaptcha on page `page_url` with the input value `website_key`.
+		Timeout is `timeout` seconds, defaulting to 60 seconds.
+
+		Return value is either the `g-hcaptcha-response` value, or an exception is raised
+		(generally `CaptchaSolverFailure`)
+		'''
+
+		proxy = SocksProxy.ProxyLauncher(ANTICAPTCHA_IPS)
+		self.log.info("Connection params: %s:%s", proxy.get_wan_ip(), proxy.get_wan_port())
+
+		# Wait for the port to be open and stuff. No idea why this seemed to be needed
+		self.log.info("Letting port forward stabilize.")
+		time.sleep(5)
+
+		try:
+			task = python_anticaptcha.HCaptchaTask(
+					website_url    = page_url,
+					website_key    = website_key,
+					user_agent     = dict(self.wg.browserHeaders).get('User-Agent'),
+
+					proxy_type     = "socks5",
+					proxy_address  = proxy.get_wan_ip(),
+					proxy_port     = proxy.get_wan_port(),
+					proxy_login    = None,
+					proxy_password = None,
+
+				)
+
+			job = self.client.createTask(task)
+			job.join(maximum_time = timeout)
+
+			return job.get_solution_response()
+		except python_anticaptcha.AnticaptchaException as e:
+			raise exc.CaptchaSolverFailure("Failure solving captcha: %s, %s, %s" % (
+					e.error_id,
+					e.error_code,
+					e.error_description,
+				))
+
+		finally:
+			proxy.stop()
+
 
 def recaptcha_test():
 	import test_settings

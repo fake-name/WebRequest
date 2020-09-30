@@ -53,7 +53,9 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 				# and other assorted parameters via their API at all.
 				elif (is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept-Language':
 					pass
-				elif (is_annoying_pjs or is_chromium or is_selenium_garbage_chromium or skip_header_checks) and key == 'Accept':
+
+				# Chromium is just broken completely for the accept header
+				elif (is_annoying_pjs or is_selenium_garbage_chromium or is_chromium or skip_header_checks) and key == 'Accept':
 					pass
 				elif not skip_header_checks:
 					v1 = value.replace(" ", "")
@@ -61,7 +63,7 @@ def capture_expected_headers(expected_headers, test_context, is_chromium=False, 
 					if v2 is None:
 						v2 = ""
 					v2 = v2.replace(" ", "")
-					test_context.assertEqual(v1, v2, msg="Mismatch in header parameter '{}' : '{}' -> '{}' ({})".format(
+					test_context.assertEqual(v1, v2, msg="Mismatch in header parameter '{}' : expect: '{}' -> received:'{}' ({})".format(
 							key,
 							value,
 							self.headers[key],
