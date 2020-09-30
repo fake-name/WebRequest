@@ -20,8 +20,8 @@ nosetests                      \
 	--with-coverage            \
 	--exe                      \
 	--cover-package=WebRequest \
-	--stop                     \
 	tests
+	# --stop                     \
 	# tests.test_selenium
 	# tests.test_simple
 

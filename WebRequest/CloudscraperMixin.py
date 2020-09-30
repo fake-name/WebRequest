@@ -85,7 +85,7 @@ class CloudScraperWrapper(cloudscraper.CloudScraper):
 		print("kwargs", kwargs)
 
 
-		ret =  super(CloudScraper, self).request(method, url, *args, **kwargs)
+		ret =  super(cloudscraper.CloudScraper, self).request(method, url, *args, **kwargs)
 
 
 		self.wg.getfile
