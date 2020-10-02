@@ -65,47 +65,47 @@ class CloudScraperWrapper(cloudscraper.CloudScraper):
 		# ------------------------------------------------------------------------------- #
 
 
-	def perform_request(self, method, url, *args, **kwargs):
-		assert args == (), "Args not empty! Value: %s" % (args, )
+	# def perform_request(self, method, url, *args, **kwargs):
+	# 	assert args == (), "Args not empty! Value: %s" % (args, )
 
-		if 'data' in kwargs and method != 'POST':
-			raise RuntimeError("Do not know how to handle post without data to post!")
-		# args seems to not be used
-		# Possible kwargs:
-		#     allow_redirects
-		#     data
-		#     headers
-		#     proxies
-
-
-		print("perform_request")
-		print("method", method)
-		print("url", url)
-		print("args", args)
-		print("kwargs", kwargs)
+	# 	if 'data' in kwargs and method != 'POST':
+	# 		raise RuntimeError("Do not know how to handle post without data to post!")
+	# 	# args seems to not be used
+	# 	# Possible kwargs:
+	# 	#     allow_redirects
+	# 	#     data
+	# 	#     headers
+	# 	#     proxies
 
 
-		ret =  super(cloudscraper.CloudScraper, self).request(method, url, *args, **kwargs)
+	# 	print("perform_request")
+	# 	print("method", method)
+	# 	print("url", url)
+	# 	print("args", args)
+	# 	print("kwargs", kwargs)
 
 
-		self.wg.getfile
-
-		resp = requests.Response()
-
-		resp._content = ""
-		resp._content_consumed = True
-		resp.status_code = None
-		resp.headers = requests.structures.CaseInsensitiveDict()
-		resp.raw = None
-		resp.url = None
-		resp.encoding = None
-		resp.history = []
-		resp.reason = None
-		resp.elapsed = datetime.timedelta(0)
-		resp.request = None
+	# 	ret =  super(cloudscraper.CloudScraper, self).request(method, url, *args, **kwargs)
 
 
-		return ret
+	# 	self.wg.getfile
+
+	# 	resp = requests.Response()
+
+	# 	resp._content = ""
+	# 	resp._content_consumed = True
+	# 	resp.status_code = None
+	# 	resp.headers = requests.structures.CaseInsensitiveDict()
+	# 	resp.raw = None
+	# 	resp.url = None
+	# 	resp.encoding = None
+	# 	resp.history = []
+	# 	resp.reason = None
+	# 	resp.elapsed = datetime.timedelta(0)
+	# 	resp.request = None
+
+
+	# 	return ret
 
 
 

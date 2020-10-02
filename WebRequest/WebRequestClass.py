@@ -290,7 +290,6 @@ class WebGetRobust(
 		if not tgt_url:
 			tgt_url = args[0]
 
-
 		page, handle = self.getpage(*args, **kwargs)
 
 		redirurl = handle.geturl()
@@ -1126,8 +1125,14 @@ class WebGetRobust(
 
 
 	def stepThroughCloudFlareWaf(self, url:str):
-		return self.handle_cloudflare_cloudscraper(url)
-		# return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
+		return self.stepThroughJsWaf(url, titleNotContains='Just a moment...')
+
+		# try:
+		# 	return self.handle_cloudflare_cloudscraper(url)
+		# except Exception as e:
+		# 	self.log.error("Failed in cloudscraper: %s", e)
+		# 	self.log.error("Using JS tooling")
+
 
 	def stepThroughSucuriWaf(self, url:str):
 		return self.stepThroughJsWaf(url, titleNotContains="You are being redirected...")
